@@ -89,7 +89,7 @@ uint8_t q1(uint8_t x)
     uint32_t y = 16 * b4 + a4;
     return 16 * b4 + a4;
 }
-vector<uint8_t> v;
+vector<uint32_t> v;
 
 uint32_t h(uint32_t b, vector<uint8_t>& me)
 {
@@ -197,7 +197,7 @@ void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
     LOAD32L(b, &in[4]);
     LOAD32L(c, &in[8]);
     LOAD32L(d, &in[12]);
-    a^=sk[0];
+    a=a^sk[0];
     b^=sk[1];
     c^=sk[2];
     d^=sk[3];
@@ -206,10 +206,10 @@ void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
         b = ROL(b, 8);
         a = g(a);
         b = g(b);
-        a = a + b % (uint32_t)pow(2, 32);
-        b = a + b % (uint32_t)pow(2, 32);
-        a+=sk[2*r+8] % (uint32_t)pow(2, 32);
-        b+=sk[2*r+9] % (uint32_t)pow(2, 32);
+        a = a + b % (uint64_t)pow(2, 32);
+        b = a + b % (uint64_t)pow(2, 32);
+        a+=sk[2*r+8] % (uint64_t)pow(2, 32);
+        b+=sk[2*r+9] % (uint64_t)pow(2, 32);
         c = c ^ a;
         d = ROL(d, 1);
         d = d ^ b;
@@ -231,16 +231,50 @@ void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
 
 void decrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
 {
-
+    uint32_t a, b, c, d;
+    LOAD32L(a, &in[0]);
+    LOAD32L(b, &in[4]);
+    LOAD32L(c, &in[8]);
+    LOAD32L(d, &in[12]);
+    a^=sk[4];
+    b^=sk[5];
+    c^=sk[6];
+    d^=sk[7];
+    for (uint8_t r = 0; r < 16; r++)
+    {
+        b = ROL(b, 8);
+        a = g(a);
+        b = g(b);
+        a = a + b % (uint64_t)pow(2, 32);
+        b = a + b % (uint64_t)pow(2, 32);
+        a+=sk[2*r+8] % (uint64_t)pow(2, 32);
+        b+=sk[2*r+9] % (uint64_t)pow(2, 32);
+        c = c ^ a;
+        d = ROL(d, 1);
+        d = d ^ b;
+        c = ROR(c, 1);
+        swap(a,c);
+        swap(b,d);
+    }
+    swap(a,c);
+    swap(b,d);
+    a^=sk[0];
+    b^=sk[1];
+    c^=sk[2];
+    d^=sk[3];
+    STORE32L(a,&out[0]);
+    STORE32L(b,&out[4]);
+    STORE32L(c,&out[8]);
+    STORE32L(d,&out[12]);
 }
 
 int main(int argc, char* argv[])
 {
     ifstream inFile;
     ifstream keyFile;
+    ofstream outFile;
     vector<uint32_t> sk;
 
-    uint8_t text[16];
     keyFile.open("key.txt", ios::in | ios::binary);
     //читаем файл с ключом
     if (!keyFile)
@@ -255,16 +289,17 @@ int main(int argc, char* argv[])
         cout << "error key length";
     else
     {
-        k = std::ceil((sizeK) / 64.0);
+        uint8_t text[16];
+        k = std::ceil((sizeK*8) / 64.0);
         uint8_t* key;
-        key = new uint8_t[k * 64];
-        memset(key, 0, k * 64);
+        key = new uint8_t[k * 8];
+        memset(key, 0, k * 8);
 
-        keyFile.read((char*)key, k * 64);
+        keyFile.read((char*)key, k * 8);
 
-        for (int i = 0; i < k * 64; i++)
-            cout << key[i];
-
+        cout<<"key:\n";
+        for (int i = 0; i < k * 8; i++)
+            cout << hex << uppercase << (uint32_t)key[i];
         vector<uint8_t> me;
         vector<uint8_t> mo;
         me.resize(4 * k);
@@ -272,7 +307,7 @@ int main(int argc, char* argv[])
         v.resize(k);
 
         int j = 0;
-        for (uint8_t i = 0; i < 2 * k; i++)
+        for (uint8_t i = 0; i <k; i++)
         {
             me[4 * j] = key[4 * i];
             me[4 * j + 1] = key[4 * i + 1];
@@ -299,7 +334,7 @@ int main(int argc, char* argv[])
             boost::qvm::mat <uint8_t, 4, 1>res = M2 * m;
 
             for (int d = 0; d < 4; d++)
-                v[k - j - 1] += res.a[0][d] * pow(2, 8 * d);
+                v[k - j - 1] = res.a[0][d] * pow(2, 8 * d);//поправить
 
             j++;
         }
@@ -323,21 +358,30 @@ int main(int argc, char* argv[])
         cout << "error in.txt";
         return 1;
     }
-    else
+    outFile.open("out.txt", ios::in | ios::binary);
+    if(!outFile.is_open())
     {
-        uint8_t text[128];
-        inFile.read((char*)text, 128);
-        encrypt(text,text,sk);
-
+        cout << "error in.txt";
+        return 1;
     }
-    // while (!inFile.atEnd())
-     //{
-     //    int j = inFile.read((char*)text, 16);
-     //    for (int i = 0; i < j; i++)
-     //        cout << text[i];
-     //}
-    inFile.close();
+    uint8_t text[16];
+    uint8_t out[16];
 
+    while(!inFile.eof())
+    {
+        inFile.read((char*)text, 16);
+        encrypt(text,out,sk);
+        cout<<"\nencrypt:\n";
+        for(uint8_t i=0; i<16;i++)
+        {
+            outFile<< hex << uppercase<<(uint32_t)out[i];
+            cout<< hex << uppercase <<(uint32_t)out[i];
+        }
+    }
+    decrypt(out,out,sk);
+    outFile.close();
+    inFile.close();
+    cout<<"\n";
 
     return 0;
 }
