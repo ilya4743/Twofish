@@ -8,14 +8,13 @@
 #include <boost/qvm/mat_operations.hpp>
 
 using namespace std;
-typedef unsigned char byte;
-typedef unsigned long byte4;
-byte k;
-#define STORE32L(x, y)  { ulong32 __t = (x); memcpy(y, &__t, 4); }
+
+uint8_t k;
+#define STORE32L(x, y)  { uint32_t __t = (x); memcpy(y, &__t, 4); }
 #define LOAD32L(x, y)   { memcpy(&(x), y, 4); x &= 0xFFFFFFFF; }
 
-#define ROL(x, y) ( (((unsigned long)(x)<<(unsigned long)((y)&31)) | (((unsigned long)(x)&0xFFFFFFFFUL)>>(unsigned long)(32-((y)&31)))) & 0xFFFFFFFFUL)
-#define ROR(x, y) ( ((((unsigned long)(x)&0xFFFFFFFFUL)>>(unsigned long)((y)&31)) | ((unsigned long)(x)<<(unsigned long)(32-((y)&31)))) & 0xFFFFFFFFUL)
+#define ROL(x, y) ( (((uint32_t)(x)<<(uint32_t)((y)&31)) | (((uint32_t)(x)&0xFFFFFFFFUL)>>(uint32_t)(32-((y)&31)))) & 0xFFFFFFFFUL)
+#define ROR(x, y) ( ((((uint32_t)(x)&0xFFFFFFFFUL)>>(uint32_t)((y)&31)) | ((uint32_t)(x)<<(uint32_t)(32-((y)&31)))) & 0xFFFFFFFFUL)
 
 #define ROL4L(x) (((x << 1) & 0x0F | ((x & 0x08) >> 3)) | (x & 0xF0))
 #define ROL4H(x) (((x << 1) & 0xF0 | ((x & 0x80) >> 3)) | (x & 0x0F))
@@ -23,34 +22,9 @@ byte k;
 #define ROR4L(x) (((x >> 1) & 0x0F | ((x & 0x01) << 3)) | (x & 0xF0))
 #define ROR4H(x) (((x >> 1) & 0xF0 | ((x & 0x10) << 3)) | (x & 0x0F))
 
-void encrypt(const unsigned char* in, unsigned char* out)
-{
-    byte4 a, b, c, d;
-    //ta, tb, tc, td, t1, t2, * k;
+const uint32_t p = 16843009;
 
-    LOAD32L(a, &in[0]);
-    LOAD32L(b, &in[4]);
-    LOAD32L(c, &in[8]);
-    LOAD32L(d, &in[12]);
-    for (byte r = 0; r < 16; r++)
-    {
-        b = ROL(b, 8);
-        a = g(a);
-        b = g(b);
-        a = a + b % (byte4)pow(2, 32);
-        b = a + b % (byte4)pow(2, 32);
-        a;
-        b;
-        c = c ^ a;
-        d = ROL(d, 1);
-        d = d ^ b;
-        c = ROR(c, 1);
-    }
-}
-
-const byte4 p = 16843009;
-
-boost::qvm::mat<byte, 4, 4> M1 =
+boost::qvm::mat<uint8_t, 4, 4> M1 =
 {
     0x01, 0xEF, 0x5B, 0x5B,
     0x5B, 0xEF, 0xEF, 0x01,
@@ -58,7 +32,7 @@ boost::qvm::mat<byte, 4, 4> M1 =
     0xEF, 0X01, 0XEF, 0X5B
 };
 
-boost::qvm::mat<byte, 4, 8> M2 =
+boost::qvm::mat<uint8_t, 4, 8> M2 =
 {
     0x01, 0xA4, 0x55, 0x87, 0x5A, 0x58, 0xDB, 0x9E,
     0xA4, 0x56, 0x82, 0xF3, 0X1E, 0XC6, 0X68, 0XE5,
@@ -66,7 +40,7 @@ boost::qvm::mat<byte, 4, 8> M2 =
     0XA4, 0X55, 0X87, 0X5A, 0X58, 0XDB, 0X9E, 0X03
 };
 
-boost::qvm::mat<byte, 4, 16> Tq0 =
+boost::qvm::mat<uint8_t, 4, 16> Tq0 =
 {
     0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4,
     0xE, 0XC, 0XB, 0X8, 0X1, 0X2, 0X3, 0X5, 0XF, 0X4, 0XA, 0X6, 0X7, 0X0, 0X9, 0XD,
@@ -74,7 +48,7 @@ boost::qvm::mat<byte, 4, 16> Tq0 =
     0XD, 0X7, 0XF, 0X4, 0X1, 0X2, 0X6, 0XE, 0X9, 0XB, 0X3, 0X0, 0X8, 0X5, 0XC, 0XA
 };
 
-boost::qvm::mat<byte, 4, 16> Tq1 =
+boost::qvm::mat<uint8_t, 4, 16> Tq1 =
 {
     0X2, 0X8, 0XB, 0XD, 0XF, 0X7, 0X6, 0XE, 0X3, 0X1, 0X9, 0X4, 0X0, 0XA, 0XC, 0X5,
     0X1, 0XE, 0X2, 0XB, 0X4, 0XC, 0X3, 0X7, 0X6, 0XD, 0XA, 0X5, 0XF, 0X9, 0X0, 0X8,
@@ -83,9 +57,9 @@ boost::qvm::mat<byte, 4, 16> Tq1 =
 };
 //res = (n1 << 24) | (n2 << 16) | (n3 << 8) | n4;
 
-byte q0(byte x)
+uint8_t q0(uint8_t x)
 {
-    byte a0, b0, a2, b2, a4, b4;
+    uint8_t a0, b0, a2, b2, a4, b4;
     a0 = x / 16;
     b0 = x % 16;
     a0 = (a0 ^ b0) << 4;
@@ -99,9 +73,9 @@ byte q0(byte x)
     return 16 * b4 + a4;
 }
 
-byte q1(byte x)
+uint8_t q1(uint8_t x)
 {
-    byte a0, b0, a2, b2, a4, b4;
+    uint8_t a0, b0, a2, b2, a4, b4;
     a0 = x / 16;
     b0 = x % 16;
     a0 = (a0 ^ b0) << 4;
@@ -112,26 +86,14 @@ byte q1(byte x)
     b2 = ((a2 & 0xF0) ^ ROR4L(b2) ^ 8 * (a2 & 0xF0) % 16) << 4;
     a4 = Tq1.a[2][a2 & 0xF0];
     b4 = Tq1.a[2][b2 & 0xF0];
-    byte4 y = 16 * b4 + a4;
+    uint32_t y = 16 * b4 + a4;
     return 16 * b4 + a4;
 }
-vector<byte> v;
-byte4 g(byte4 b)
-{
-    byte b0, b1, b2, b3;
-    b = h(b, v);
-    b0 = b & 0xFF;
-    b1 = b >> 8 & 0xFF;
-    b2 = b >> 16 & 0xFF;
-    b3 = b >> 24 & 0xFF;
-    boost::qvm::mat <byte, 4, 1>s = { b0,b1,b2,b3 };
-    boost::qvm::mat <byte, 4, 1>res = M1 * s;
-    return (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-}
+vector<uint8_t> v;
 
-byte4 h(byte4 b, vector<unsigned char>& me)
+uint32_t h(uint32_t b, vector<uint8_t>& me)
 {
-    byte b0, b1, b2, b3;
+    uint8_t b0, b1, b2, b3;
 
     if (k == 4)
     {
@@ -144,7 +106,7 @@ byte4 h(byte4 b, vector<unsigned char>& me)
         b2 = q0(b2);
         b3 = q1(b3);
         b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        byte4 Me3 = (me[15] << 24) | (me[14] << 16) | (me[13] << 8) | me[12];
+        uint32_t Me3 = (me[15] << 24) | (me[14] << 16) | (me[13] << 8) | me[12];
         b ^= Me3;
 
         b0 = b & 0xFF;
@@ -156,7 +118,7 @@ byte4 h(byte4 b, vector<unsigned char>& me)
         b2 = q0(b2);
         b3 = q0(b3);
         b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        byte4 Me2 = (me[11] << 24) | (me[10] << 16) | (me[9] << 8) | me[8];
+        uint32_t Me2 = (me[11] << 24) | (me[10] << 16) | (me[9] << 8) | me[8];
         b ^= Me2;
     }
     else if (k == 3)
@@ -170,7 +132,7 @@ byte4 h(byte4 b, vector<unsigned char>& me)
         b2 = q0(b2);
         b3 = q0(b3);
         b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        byte4 Me2 = (me[11] << 24) | (me[10] << 16) | (me[9] << 8) | me[8];
+        uint32_t Me2 = (me[11] << 24) | (me[10] << 16) | (me[9] << 8) | me[8];
         b ^= Me2;
     }
 
@@ -183,7 +145,7 @@ byte4 h(byte4 b, vector<unsigned char>& me)
     b2 = q0(b2);
     b3 = q1(b3);
     b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-    byte4 Me1 = (me[7] << 24) | (me[6] << 16) | (me[5] << 8) | me[4];
+    uint32_t Me1 = (me[7] << 24) | (me[6] << 16) | (me[5] << 8) | me[4];
     b ^= Me1;
 
     b0 = b & 0xFF;
@@ -195,7 +157,7 @@ byte4 h(byte4 b, vector<unsigned char>& me)
     b2 = q1(b2);
     b3 = q1(b3);
     b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-    byte4 Me0 = (me[3] << 24) | (me[2] << 16) | (me[1] << 8) | me[0];
+    uint32_t Me0 = (me[3] << 24) | (me[2] << 16) | (me[1] << 8) | me[0];
     b ^= Me0;
 
     b0 = b & 0xFF;
@@ -207,20 +169,78 @@ byte4 h(byte4 b, vector<unsigned char>& me)
     b2 = q1(b2);
     b3 = q0(b3);
 
-    boost::qvm::mat <byte, 4, 1>y = { b0,b1,b2,b3 };
-    boost::qvm::mat <byte, 4, 1>res = M1 * y;
-    byte4 H = 0;
-    for (byte i = 0; i < 4; i++)
+    boost::qvm::mat <uint8_t, 4, 1>y = { b0,b1,b2,b3 };
+    boost::qvm::mat <uint8_t, 4, 1>res = M1 * y;
+    uint32_t H = 0;
+    for (uint8_t i = 0; i < 4; i++)
         H += res.a[0][i] * pow(2, 8 * i);
     return H;
+}
+
+uint32_t g(uint32_t b)
+{
+    uint8_t b0, b1, b2, b3;
+    b = h(b, v);
+    b0 = b & 0xFF;
+    b1 = b >> 8 & 0xFF;
+    b2 = b >> 16 & 0xFF;
+    b3 = b >> 24 & 0xFF;
+    boost::qvm::mat <uint8_t, 4, 1>s = { b0,b1,b2,b3 };
+    boost::qvm::mat <uint8_t, 4, 1>res = M1 * s;
+    return (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
+}
+
+void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
+{
+    uint32_t a, b, c, d;
+    LOAD32L(a, &in[0]);
+    LOAD32L(b, &in[4]);
+    LOAD32L(c, &in[8]);
+    LOAD32L(d, &in[12]);
+    a^=sk[0];
+    b^=sk[1];
+    c^=sk[2];
+    d^=sk[3];
+    for (uint8_t r = 0; r < 16; r++)
+    {
+        b = ROL(b, 8);
+        a = g(a);
+        b = g(b);
+        a = a + b % (uint32_t)pow(2, 32);
+        b = a + b % (uint32_t)pow(2, 32);
+        a+=sk[2*r+8] % (uint32_t)pow(2, 32);
+        b+=sk[2*r+9] % (uint32_t)pow(2, 32);
+        c = c ^ a;
+        d = ROL(d, 1);
+        d = d ^ b;
+        c = ROR(c, 1);
+        swap(a,c);
+        swap(b,d);
+    }
+    swap(a,c);
+    swap(b,d);
+    a^=sk[4];
+    b^=sk[5];
+    c^=sk[6];
+    d^=sk[7];
+    STORE32L(a,&out[0]);
+    STORE32L(b,&out[4]);
+    STORE32L(c,&out[8]);
+    STORE32L(d,&out[12]);
+}
+
+void decrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
+{
+
 }
 
 int main(int argc, char* argv[])
 {
     ifstream inFile;
     ifstream keyFile;
+    vector<uint32_t> sk;
 
-    byte text[16];
+    uint8_t text[16];
     keyFile.open("key.txt", ios::in | ios::binary);
     //читаем файл с ключом
     if (!keyFile)
@@ -236,8 +256,8 @@ int main(int argc, char* argv[])
     else
     {
         k = std::ceil((sizeK) / 64.0);
-        byte* key;
-        key = new byte[k * 64];
+        uint8_t* key;
+        key = new uint8_t[k * 64];
         memset(key, 0, k * 64);
 
         keyFile.read((char*)key, k * 64);
@@ -245,14 +265,14 @@ int main(int argc, char* argv[])
         for (int i = 0; i < k * 64; i++)
             cout << key[i];
 
-        vector<byte> me;
-        vector<byte> mo;
+        vector<uint8_t> me;
+        vector<uint8_t> mo;
         me.resize(4 * k);
         mo.resize(4 * k);
         v.resize(k);
 
         int j = 0;
-        for (byte i = 0; i < 2 * k; i++)
+        for (uint8_t i = 0; i < 2 * k; i++)
         {
             me[4 * j] = key[4 * i];
             me[4 * j + 1] = key[4 * i + 1];
@@ -265,7 +285,7 @@ int main(int argc, char* argv[])
             mo[4 * j + 2] = key[4 * i + 2];
             mo[4 * j + 3] = key[4 * i + 3];
 
-            boost::qvm::mat<byte, 8, 1> m =
+            boost::qvm::mat<uint8_t, 8, 1> m =
             {
                 me[4 * j],
                 me[4 * j + 1] ,
@@ -276,19 +296,18 @@ int main(int argc, char* argv[])
                 mo[4 * j + 2],
                 mo[4 * j + 3]
             };
-            boost::qvm::mat <byte, 4, 1>res = M2 * m;
+            boost::qvm::mat <uint8_t, 4, 1>res = M2 * m;
 
             for (int d = 0; d < 4; d++)
                 v[k - j - 1] += res.a[0][d] * pow(2, 8 * d);
 
             j++;
         }
-        vector<byte4> sk;
         sk.resize(40);
-        for (byte i = 1; i < 20; i++)
+        for (uint8_t i = 1; i < 20; i++)
         {
-            byte4 Ai = h(2 * i * p, me);
-            byte4 Bi = ROL(h((2 * i + 1) * p, mo), 8);
+            uint32_t Ai = h(2 * i * p, me);
+            uint32_t Bi = ROL(h((2 * i + 1) * p, mo), 8);
             sk[2 * i] = Ai + Bi % int(pow(2, 32));
             sk[2 * i + 1] = ROL((Ai + 2 * Bi % int(pow(2, 32))), 9);
         }
@@ -303,6 +322,13 @@ int main(int argc, char* argv[])
     {
         cout << "error in.txt";
         return 1;
+    }
+    else
+    {
+        uint8_t text[128];
+        inFile.read((char*)text, 128);
+        encrypt(text,text,sk);
+
     }
     // while (!inFile.atEnd())
      //{
