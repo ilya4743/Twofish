@@ -91,7 +91,7 @@ uint8_t q1(uint8_t x)
 }
 vector<uint32_t> v;
 
-uint32_t h(uint32_t b, vector<uint8_t>& me)
+uint32_t h(uint32_t b, const vector<uint8_t>& me)
 {
     uint8_t b0, b1, b2, b3;
 
@@ -180,7 +180,20 @@ uint32_t h(uint32_t b, vector<uint8_t>& me)
 uint32_t g(uint32_t b)
 {
     uint8_t b0, b1, b2, b3;
-    b = h(b, v);
+    vector<uint8_t> v1;
+    v1.reserve(v.size()*4);
+    for(uint8_t i=0; i<v.size();i++)
+    {
+        b0 = v[i] & 0xFF;
+        b1 = v[i] >> 8 & 0xFF;
+        b2 = v[i] >> 16 & 0xFF;
+        b3 = v[i] >> 24 & 0xFF;
+        v1.push_back(b0);
+        v1.push_back(b1);
+        v1.push_back(b2);
+        v1.push_back(b3);
+    }
+    b = h(b, v1);
     b0 = b & 0xFF;
     b1 = b >> 8 & 0xFF;
     b2 = b >> 16 & 0xFF;
@@ -301,42 +314,54 @@ int main(int argc, char* argv[])
         for (int i = 0; i < k * 8; i++)
             cout << hex << uppercase << (uint32_t)key[i];
         vector<uint8_t> me;
+
         vector<uint8_t> mo;
-        me.resize(4 * k);
-        mo.resize(4 * k);
+        vector<uint8_t> Mo;
+
+        me.resize(4*k);
+        mo.resize(4*k);
         v.resize(k);
 
-        int j = 0;
-        for (uint8_t i = 0; i <k; i++)
+        uint8_t j = 0;
+        boost::qvm::mat <uint8_t, 4, 1>res;
+        for (uint8_t i = 0; i <= 2*k-2; i+=2)
         {
             me[4 * j] = key[4 * i];
             me[4 * j + 1] = key[4 * i + 1];
             me[4 * j + 2] = key[4 * i + 2];
             me[4 * j + 3] = key[4 * i + 3];
-
-            i++;
+            j++;
+        }
+        j = 0;
+        for (uint8_t i=1;i<=2*k-1;i+=2)
+        {
             mo[4 * j] = key[4 * i];
             mo[4 * j + 1] = key[4 * i + 1];
             mo[4 * j + 2] = key[4 * i + 2];
             mo[4 * j + 3] = key[4 * i + 3];
+            j++;
+        }
 
+        for(int i=k-1; i>=0; i--)
+        {
             boost::qvm::mat<uint8_t, 8, 1> m =
             {
-                me[4 * j],
-                me[4 * j + 1] ,
-                me[4 * j + 2],
-                me[4 * j + 3],
-                mo[4 * j],
-                mo[4 * j + 1],
-                mo[4 * j + 2],
-                mo[4 * j + 3]
+                key[8 * i],
+                key[8 * i + 1] ,
+                key[8 * i + 2],
+                key[8 * i + 3],
+                key[8 * i + 4],
+                key[8 * i + 5],
+                key[8 * i + 6],
+                key[8 * i + 7]
             };
-            boost::qvm::mat <uint8_t, 4, 1>res = M2 * m;
+            res = M2 * m;
 
-            for (int d = 0; d < 4; d++)
-                v[k - j - 1] = res.a[0][d] * pow(2, 8 * d);//поправить
-
-            j++;
+            for (uint8_t d = 0; d < 4; d++)
+            {
+                v[i] += res.a[0][d] * pow(2, 8 * d);//поправить
+                cout<<endl<<v[i];
+            }
         }
         sk.resize(40);
         for (uint8_t i = 1; i < 20; i++)
@@ -361,7 +386,7 @@ int main(int argc, char* argv[])
     outFile.open("out.txt", ios::in | ios::binary);
     if(!outFile.is_open())
     {
-        cout << "error in.txt";
+        cout << "error out.txt";
         return 1;
     }
     uint8_t text[16];
