@@ -55,7 +55,6 @@ boost::qvm::mat<uint8_t, 4, 16> Tq1 =
     0X4, 0XC, 0X7, 0X5, 0X1, 0X6, 0X9, 0XA, 0X0, 0XE, 0XD, 0X8, 0X2, 0XB, 0X3, 0XF,
     0xB, 0X9, 0X5, 0X1, 0XC, 0X3, 0XD, 0XE, 0X6, 0X4, 0X7, 0XF, 0X2, 0X0, 0X8, 0XA
 };
-//res = (n1 << 24) | (n2 << 16) | (n3 << 8) | n4;
 
 uint8_t q0(uint8_t x)
 {
@@ -192,21 +191,28 @@ uint32_t g(uint32_t b)
 void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
 {
     uint32_t a, b, c, d;
+
     LOAD32L(a, &in[0]);
     LOAD32L(b, &in[4]);
     LOAD32L(c, &in[8]);
     LOAD32L(d, &in[12]);
+    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+
     a=a^sk[0];
     b^=sk[1];
     c^=sk[2];
     d^=sk[3];
-    for (uint8_t r = 0; r < 16; r++)
+    cout<<"whitenning in\n";
+    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+
+    for (uint32_t r = 0; r < 16; r++)
     {
         b = ROL(b, 8);
         a = g(a);
         b = g(b);
         a = a + b % (uint64_t)pow(2, 32);
         b = a + b % (uint64_t)pow(2, 32);
+        cout<<sk[2*r+8]<<'\t'<<sk[2*r+9]<<endl;
         a+=sk[2*r+8] % (uint64_t)pow(2, 32);
         b+=sk[2*r+9] % (uint64_t)pow(2, 32);
         c = c ^ a;
@@ -215,6 +221,8 @@ void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
         c = ROR(c, 1);
         swap(a,c);
         swap(b,d);
+        cout<<"round "<<static_cast<uint32_t>(r)<<endl;
+        cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
     }
     swap(a,c);
     swap(b,d);
@@ -222,6 +230,8 @@ void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
     b^=sk[5];
     c^=sk[6];
     d^=sk[7];
+    cout<<"whitenning out\n";
+    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
     STORE32L(a,&out[0]);
     STORE32L(b,&out[4]);
     STORE32L(c,&out[8]);
@@ -299,6 +309,7 @@ int main(int argc, char* argv[])
         cout<<"key:\n";
         for (int i = 0; i < k * 8; i++)
             cout << hex << uppercase << (uint32_t)key[i];
+        cout<<endl<<endl;
         vector<uint32_t> me;
         vector<uint32_t> mo;
 
@@ -308,6 +319,7 @@ int main(int argc, char* argv[])
 
         uint8_t j = 0,b0,b1,b2,b3;
         boost::qvm::mat <uint8_t, 4, 1>res;
+        cout<<"Me: ";
         for (uint8_t i = 0; i <= 2*k-2; i+=2)
         {
             b0 = key[4 * i];
@@ -315,9 +327,11 @@ int main(int argc, char* argv[])
             b2 = key[4 * i + 2];
             b3 = key[4 * i + 3];
             me[j]=(b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
+            cout<<hex<<uppercase<<me[j]<<'\t';
             j++;
         }
         j = 0;
+        cout<<"\nMo: ";
         for (uint8_t i=1;i<=2*k-1;i+=2)
         {
             b0 = key[4 * i];
@@ -325,9 +339,10 @@ int main(int argc, char* argv[])
             b2 = key[4 * i + 2];
             b3 = key[4 * i + 3];
             mo[j]=(b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
+            cout<<hex<<uppercase<<mo[j]<<'\t';
             j++;
         }
-
+        cout<<"\nVk-1 ";
         for(int i=k-1; i>=0; i--)
         {
             boost::qvm::mat<uint8_t, 8, 1> m =
@@ -346,11 +361,11 @@ int main(int argc, char* argv[])
             for (uint8_t d = 0; d < 4; d++)
             {
                 v[i] += res.a[0][d] * pow(2, 8 * d);//поправить
-                cout<<endl<<v[i];
             }
+            cout<<hex<<uppercase<<v[i]<<'\t';
         }
         sk.resize(40);
-        for (uint8_t i = 1; i < 20; i++)
+        for (uint32_t i = 0; i < 20; i++)
         {
             uint32_t Ai = h(2 * i * p, me);
             uint32_t Bi = ROL(h((2 * i + 1) * p, mo), 8);
@@ -381,8 +396,10 @@ int main(int argc, char* argv[])
     while(!inFile.eof())
     {
         inFile.read((char*)text, 16);
+        cout<<"\n\ntext\n";
+        cout<<text<<endl;
         encrypt(text,out,sk);
-        cout<<"\nencrypt:\n";
+        cout<<"\n\nencrypt:\n";
         for(uint8_t i=0; i<16;i++)
         {
             outFile<< hex << uppercase<<(uint32_t)out[i];
