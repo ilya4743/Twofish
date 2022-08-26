@@ -86,14 +86,18 @@ uint8_t q1(uint8_t x)
     b2 = ((a2 & 0xF0) ^ ROR4L(b2) ^ 8 * (a2 & 0xF0) % 16) << 4;
     a4 = Tq1.a[2][a2 & 0xF0];
     b4 = Tq1.a[2][b2 & 0xF0];
-    uint32_t y = 16 * b4 + a4;
     return 16 * b4 + a4;
 }
 vector<uint32_t> v;
 
-uint32_t h(uint32_t b, const vector<uint8_t>& me)
+uint32_t h(uint32_t b, const vector<uint32_t>& M)
 {
     uint8_t b0, b1, b2, b3;
+
+    b0 = b & 0xFF;
+    b1 = b >> 8 & 0xFF;
+    b2 = b >> 16 & 0xFF;
+    b3 = b >> 24 & 0xFF;
 
     if (k == 4)
     {
@@ -106,8 +110,7 @@ uint32_t h(uint32_t b, const vector<uint8_t>& me)
         b2 = q0(b2);
         b3 = q1(b3);
         b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        uint32_t Me3 = (me[15] << 24) | (me[14] << 16) | (me[13] << 8) | me[12];
-        b ^= Me3;
+        b ^= M[3];
 
         b0 = b & 0xFF;
         b1 = b >> 8 & 0xFF;
@@ -118,8 +121,7 @@ uint32_t h(uint32_t b, const vector<uint8_t>& me)
         b2 = q0(b2);
         b3 = q0(b3);
         b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        uint32_t Me2 = (me[11] << 24) | (me[10] << 16) | (me[9] << 8) | me[8];
-        b ^= Me2;
+        b ^= M[2];
     }
     else if (k == 3)
     {
@@ -132,8 +134,7 @@ uint32_t h(uint32_t b, const vector<uint8_t>& me)
         b2 = q0(b2);
         b3 = q0(b3);
         b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        uint32_t Me2 = (me[11] << 24) | (me[10] << 16) | (me[9] << 8) | me[8];
-        b ^= Me2;
+        b ^= M[2];
     }
 
     b0 = b & 0xFF;
@@ -145,8 +146,7 @@ uint32_t h(uint32_t b, const vector<uint8_t>& me)
     b2 = q0(b2);
     b3 = q1(b3);
     b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-    uint32_t Me1 = (me[7] << 24) | (me[6] << 16) | (me[5] << 8) | me[4];
-    b ^= Me1;
+    b ^= M[1];
 
     b0 = b & 0xFF;
     b1 = b >> 8 & 0xFF;
@@ -157,8 +157,7 @@ uint32_t h(uint32_t b, const vector<uint8_t>& me)
     b2 = q1(b2);
     b3 = q1(b3);
     b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-    uint32_t Me0 = (me[3] << 24) | (me[2] << 16) | (me[1] << 8) | me[0];
-    b ^= Me0;
+    b ^= M[0];
 
     b0 = b & 0xFF;
     b1 = b >> 8 & 0xFF;
@@ -180,20 +179,7 @@ uint32_t h(uint32_t b, const vector<uint8_t>& me)
 uint32_t g(uint32_t b)
 {
     uint8_t b0, b1, b2, b3;
-    vector<uint8_t> v1;
-    v1.reserve(v.size()*4);
-    for(uint8_t i=0; i<v.size();i++)
-    {
-        b0 = v[i] & 0xFF;
-        b1 = v[i] >> 8 & 0xFF;
-        b2 = v[i] >> 16 & 0xFF;
-        b3 = v[i] >> 24 & 0xFF;
-        v1.push_back(b0);
-        v1.push_back(b1);
-        v1.push_back(b2);
-        v1.push_back(b3);
-    }
-    b = h(b, v1);
+    b = h(b, v);
     b0 = b & 0xFF;
     b1 = b >> 8 & 0xFF;
     b2 = b >> 16 & 0xFF;
@@ -250,9 +236,9 @@ void decrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
     LOAD32L(c, &in[8]);
     LOAD32L(d, &in[12]);
     a^=sk[4];
-    b^=sk[5];
+    b^=sk[7];
     c^=sk[6];
-    d^=sk[7];
+    d^=sk[5];
     for (uint8_t r = 0; r < 16; r++)
     {
         b = ROL(b, 8);
@@ -313,32 +299,32 @@ int main(int argc, char* argv[])
         cout<<"key:\n";
         for (int i = 0; i < k * 8; i++)
             cout << hex << uppercase << (uint32_t)key[i];
-        vector<uint8_t> me;
+        vector<uint32_t> me;
+        vector<uint32_t> mo;
 
-        vector<uint8_t> mo;
-        vector<uint8_t> Mo;
-
-        me.resize(4*k);
-        mo.resize(4*k);
+        me.resize(k);
+        mo.resize(k);
         v.resize(k);
 
-        uint8_t j = 0;
+        uint8_t j = 0,b0,b1,b2,b3;
         boost::qvm::mat <uint8_t, 4, 1>res;
         for (uint8_t i = 0; i <= 2*k-2; i+=2)
         {
-            me[4 * j] = key[4 * i];
-            me[4 * j + 1] = key[4 * i + 1];
-            me[4 * j + 2] = key[4 * i + 2];
-            me[4 * j + 3] = key[4 * i + 3];
+            b0 = key[4 * i];
+            b1 = key[4 * i + 1];
+            b2 = key[4 * i + 2];
+            b3 = key[4 * i + 3];
+            me[j]=(b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
             j++;
         }
         j = 0;
         for (uint8_t i=1;i<=2*k-1;i+=2)
         {
-            mo[4 * j] = key[4 * i];
-            mo[4 * j + 1] = key[4 * i + 1];
-            mo[4 * j + 2] = key[4 * i + 2];
-            mo[4 * j + 3] = key[4 * i + 3];
+            b0 = key[4 * i];
+            b1 = key[4 * i + 1];
+            b2 = key[4 * i + 2];
+            b3 = key[4 * i + 3];
+            mo[j]=(b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
             j++;
         }
 
