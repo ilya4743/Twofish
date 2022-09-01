@@ -58,17 +58,17 @@ boost::qvm::mat<uint8_t, 4, 16> Tq1 =
 
 uint8_t q0(uint8_t x)
 {
-    uint8_t a0, b0, a2, b2, a4, b4;
+    uint8_t a0, b0, a2, b2, a4, b4,c00;
     a0 = x / 16;
     b0 = x % 16;
     a0 = ((a0 ^ b0) << 4)|a0;
     b0 = (((a0 & 0x0F) ^ (ROR4L(b0)) ^ 8 * (a0 & 0x0F) % 16) << 4)|b0;
-    a2 = Tq0.a[0][a0 & 0xF0];
-    b2 = Tq0.a[1][b0 & 0xF0];
+    a2 = Tq0.a[0][(a0 & 0xF0)>>4];
+    b2 = Tq0.a[1][(b0 & 0xF0)>>4];
     a2 = ((a2 ^ b2) << 4)|a2;
-    b2 = (((a2 & 0x0F) ^ ROR4L(b2) ^ 8 * (a2 & 0x0F) % 16) << 4)|b2;
-    a4 = Tq0.a[2][a2 & 0xF0];
-    b4 = Tq0.a[3][b2 & 0xF0];
+    b2 = (((a2 & 0x0F) ^ (ROR4L(b2)) ^ 8 * (a2 & 0x0F) % 16) << 4)|b2;
+    a4 = Tq0.a[2][(a2 & 0xF0)>>4];
+    b4 = Tq0.a[3][(b2 & 0xF0)>>4];
     return 16 * b4 + a4;
 }
 
@@ -79,12 +79,12 @@ uint8_t q1(uint8_t x)
     b0 = x % 16;
     a0 = ((a0 ^ b0) << 4)|a0;
     b0 = (((a0 & 0x0F) ^ (ROR4L(b0)) ^ 8 * (a0 & 0x0F) % 16) << 4)|b0;
-    a2 = Tq1.a[0][a0 & 0xF0];
-    b2 = Tq1.a[1][b0 & 0xF0];
+    a2 = Tq1.a[0][(a0 & 0xF0)>>4];
+    b2 = Tq1.a[1][(b0 & 0xF0)>>4];
     a2 = ((a2 ^ b2) << 4)|a2;
     b2 = (((a2 & 0x0F) ^ ROR4L(b2) ^ 8 * (a2 & 0x0F) % 16) << 4)|b2;
-    a4 = Tq1.a[2][a2 & 0xF0];
-    b4 = Tq1.a[3][b2 & 0xF0];
+    a4 = Tq1.a[2][(a2 & 0xF0)>>4];
+    b4 = Tq1.a[3][(b2 & 0xF0)>>4];
     return 16 * b4 + a4;
 }
 vector<uint32_t> v;
