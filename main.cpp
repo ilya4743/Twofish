@@ -1,10 +1,10 @@
 #include <cstring>
 #include<cmath>
 #include<vector>
+#include "Header.h"
 #include <fstream>
 #include <iostream>
 #include <boost/qvm/mat.hpp>
-#include <boost/qvm/mat_access.hpp>
 #include <boost/qvm/mat_operations.hpp>
 
 using namespace std;
@@ -24,15 +24,15 @@ uint8_t k;
 
 const uint32_t p = 16843009;
 
-boost::qvm::mat<uint8_t, 4, 4> M1 =
+boost::qvm::mat<uint8_t, 4, 4> MDS =
 {
     0x01, 0xEF, 0x5B, 0x5B,
     0x5B, 0xEF, 0xEF, 0x01,
-    0xEF, 0X5B, 0X01, 0XEF,
-    0xEF, 0X01, 0XEF, 0X5B
+    0xEF, 0x5B, 0x01, 0xEF,
+    0xEF, 0x01, 0xEF, 0x5B
 };
 
-boost::qvm::mat<uint8_t, 4, 8> M2 =
+boost::qvm::mat<uint8_t, 4, 8> RS =
 {
     0x01, 0xA4, 0x55, 0x87, 0x5A, 0x58, 0xDB, 0x9E,
     0xA4, 0x56, 0x82, 0xF3, 0X1E, 0XC6, 0X68, 0XE5,
@@ -58,17 +58,17 @@ boost::qvm::mat<uint8_t, 4, 16> Tq1 =
 
 uint8_t q0(uint8_t x)
 {
-    uint8_t a0, b0, a2, b2, a4, b4,c00;
+    uint8_t a0, b0, a2, b2, a4, b4, c00;
     a0 = x / 16;
     b0 = x % 16;
-    a0 = ((a0 ^ b0) << 4)|a0;
-    b0 = (((a0 & 0x0F) ^ (ROR4L(b0)) ^ 8 * (a0 & 0x0F) % 16) << 4)|b0;
-    a2 = Tq0.a[0][(a0 & 0xF0)>>4];
-    b2 = Tq0.a[1][(b0 & 0xF0)>>4];
-    a2 = ((a2 ^ b2) << 4)|a2;
-    b2 = (((a2 & 0x0F) ^ (ROR4L(b2)) ^ 8 * (a2 & 0x0F) % 16) << 4)|b2;
-    a4 = Tq0.a[2][(a2 & 0xF0)>>4];
-    b4 = Tq0.a[3][(b2 & 0xF0)>>4];
+    a0 = ((a0 ^ b0) << 4) | a0;
+    b0 = (((a0 & 0x0F) ^ (ROR4L(b0)) ^ 8 * (a0 & 0x0F) % 16) << 4) | b0;
+    a2 = Tq0.a[0][(a0 & 0xF0) >> 4];
+    b2 = Tq0.a[1][(b0 & 0xF0) >> 4];
+    a2 = ((a2 ^ b2) << 4) | a2;
+    b2 = (((a2 & 0x0F) ^ (ROR4L(b2)) ^ 8 * (a2 & 0x0F) % 16) << 4) | b2;
+    a4 = Tq0.a[2][(a2 & 0xF0) >> 4];
+    b4 = Tq0.a[3][(b2 & 0xF0) >> 4];
     return 16 * b4 + a4;
 }
 
@@ -77,206 +77,135 @@ uint8_t q1(uint8_t x)
     uint8_t a0, b0, a2, b2, a4, b4;
     a0 = x / 16;
     b0 = x % 16;
-    a0 = ((a0 ^ b0) << 4)|a0;
-    b0 = (((a0 & 0x0F) ^ (ROR4L(b0)) ^ 8 * (a0 & 0x0F) % 16) << 4)|b0;
-    a2 = Tq1.a[0][(a0 & 0xF0)>>4];
-    b2 = Tq1.a[1][(b0 & 0xF0)>>4];
-    a2 = ((a2 ^ b2) << 4)|a2;
-    b2 = (((a2 & 0x0F) ^ ROR4L(b2) ^ 8 * (a2 & 0x0F) % 16) << 4)|b2;
-    a4 = Tq1.a[2][(a2 & 0xF0)>>4];
-    b4 = Tq1.a[3][(b2 & 0xF0)>>4];
+    a0 = ((a0 ^ b0) << 4) | a0;
+    b0 = (((a0 & 0x0F) ^ (ROR4L(b0)) ^ 8 * (a0 & 0x0F) % 16) << 4) | b0;
+    a2 = Tq1.a[0][(a0 & 0xF0) >> 4];
+    b2 = Tq1.a[1][(b0 & 0xF0) >> 4];
+    a2 = ((a2 ^ b2) << 4) | a2;
+    b2 = (((a2 & 0x0F) ^ ROR4L(b2) ^ 8 * (a2 & 0x0F) % 16) << 4) | b2;
+    a4 = Tq1.a[2][(a2 & 0xF0) >> 4];
+    b4 = Tq1.a[3][(b2 & 0xF0) >> 4];
     return 16 * b4 + a4;
 }
-vector<uint32_t> v;
+vector<vector<uint8_t>> v;
 
-uint32_t h(uint32_t b, const vector<uint32_t>& M)
+uint32_t h(uint32_t x, const vector< vector<uint8_t>>& l)
 {
-    uint8_t b0, b1, b2, b3;
-
-    if (k == 4)
+    uint8_t b[4];
+    b[0]= x & 0xFF;
+    b[1] = x >> 8 & 0xFF;
+    b[2] = x >> 16 & 0xFF;
+    b[3] = x >> 24 & 0xFF;
+    switch (k)
     {
-        b0 = b & 0xFF;
-        b1 = b >> 8 & 0xFF;
-        b2 = b >> 16 & 0xFF;
-        b3 = b >> 24 & 0xFF;
-        b0 = q1(b0);
-        b1 = q0(b1);
-        b2 = q0(b2);
-        b3 = q1(b3);
-        b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        b ^= M[3];
+    case 4:
+        b[0] = q1(b[0]) ^ l[3][0];
+        b[1] = q0(b[1]) ^ l[3][1];
+        b[2] = q0(b[2]) ^ l[3][2];
+        b[3] = q1(b[3]) ^ l[3][3];
 
-        b0 = b & 0xFF;
-        b1 = b >> 8 & 0xFF;
-        b2 = b >> 16 & 0xFF;
-        b3 = b >> 24 & 0xFF;
-        b0 = q1(b0);
-        b1 = q1(b1);
-        b2 = q0(b2);
-        b3 = q0(b3);
-        b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        b ^= M[2];
-    }
-    else if (k == 3)
-    {
-        b0 = b & 0xFF;
-        b1 = b >> 8 & 0xFF;
-        b2 = b >> 16 & 0xFF;
-        b3 = b >> 24 & 0xFF;
-        b0 = q1(b0);
-        b1 = q1(b1);
-        b2 = q0(b2);
-        b3 = q0(b3);
-        b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-        b ^= M[2];
+    case 3:
+        b[0] = q1(b[0]) ^ l[3][0];
+        b[1] = q1(b[1]) ^ l[3][1];
+        b[2] = q0(b[2]) ^ l[3][2];
+        b[3] = q0(b[3]) ^ l[3][3];
+
+    default:
+        b[0] = q1(q0(q0(b[0]) ^ l[1][0]) ^ l[0][0]);
+        b[1] = q0(q0(q1(b[1]) ^ l[1][1]) ^ l[0][1]);
+        b[2] = q1(q1(q0(b[2]) ^ l[1][2]) ^ l[0][2]);
+        b[3] = q0(q1(q1(b[3]) ^ l[1][3]) ^ l[0][3]);
     }
 
-    b0 = b & 0xFF;
-    b1 = b >> 8 & 0xFF;
-    b2 = b >> 16 & 0xFF;
-    b3 = b >> 24 & 0xFF;
-    b0 = q0(b0);
-    b1 = q1(b1);
-    b2 = q0(b2);
-    b3 = q1(b3);
-    b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-    b ^= M[1];
-
-    b0 = b & 0xFF;
-    b1 = b >> 8 & 0xFF;
-    b2 = b >> 16 & 0xFF;
-    b3 = b >> 24 & 0xFF;
-    b0 = q0(b0);
-    b1 = q0(b1);
-    b2 = q1(b2);
-    b3 = q1(b3);
-    b = (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
-    b ^= M[0];
-
-    b0 = b & 0xFF;
-    b1 = b >> 8 & 0xFF;
-    b2 = b >> 16 & 0xFF;
-    b3 = b >> 24 & 0xFF;
-    b0 = q1(b0);
-    b1 = q0(b1);
-    b2 = q1(b2);
-    b3 = q0(b3);
-
-    boost::qvm::mat <uint8_t, 4, 1>y = { b0,b1,b2,b3 };
-    boost::qvm::mat <uint8_t, 4, 1>res = M1 * y;
-    uint32_t H = 0;
-    for (uint8_t i = 0; i < 4; i++)
-        H += res.a[i][0] * pow(2, 8 * i);
-    return H;
-}
-
-uint32_t g(uint32_t b)
-{
-    uint8_t b0, b1, b2, b3;
-    b = h(b, v);
-    b0 = b & 0xFF;
-    b1 = b >> 8 & 0xFF;
-    b2 = b >> 16 & 0xFF;
-    b3 = b >> 24 & 0xFF;
-    boost::qvm::mat <uint8_t, 4, 1>s = { b0,b1,b2,b3 };
-    boost::qvm::mat <uint8_t, 4, 1>res = M1 * s;
-    return (res.a[3][0] << 24) | (res.a[2][0] << 16) | (res.a[1][0] << 8) | res.a[0][0];
+    return	
+        ((M00(b[0]) ^ M01(b[1]) ^ M02(b[2]) ^ M03(b[3]))) ^
+        ((M10(b[0]) ^ M11(b[1]) ^ M12(b[2]) ^ M13(b[3])) << 8) ^
+        ((M20(b[0]) ^ M21(b[1]) ^ M22(b[2]) ^ M23(b[3])) << 16) ^
+        ((M30(b[0]) ^ M31(b[1]) ^ M32(b[2]) ^ M33(b[3])) << 24);
 }
 
 void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
 {
     uint32_t a, b, c, d;
-
+    uint32_t t0, t1;
     LOAD32L(a, &in[0]);
     LOAD32L(b, &in[4]);
     LOAD32L(c, &in[8]);
     LOAD32L(d, &in[12]);
-    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+    cout << hex << uppercase << a << '\t' << b << '\t' << c << '\t' << d << endl;
 
-    a^=sk[0];
-    b^=sk[1];
-    c^=sk[2];
-    d^=sk[3];
-    cout<<"whitenning in\n";
-    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+    a ^= sk[0];
+    b ^= sk[1];
+    c ^= sk[2];
+    d ^= sk[3];
+    cout << "whitenning in\n";
+    cout << hex << uppercase << a << '\t' << b << '\t' << c << '\t' << d << endl;
 
     for (uint32_t r = 0; r < 16; r++)
     {
-        cout<<"round "<<static_cast<uint32_t>(r)<<endl;
-        b = ROL(b, 8);
-        a = g(a);
-        b = g(b);
-        a = a + b % (uint64_t)pow(2, 32);
-        b = a + b % (uint64_t)pow(2, 32);
-        a+=sk[2*r+8] % (uint64_t)pow(2, 32);
-        b+=sk[2*r+9] % (uint64_t)pow(2, 32);
-        c = c ^ a;
+        t0 = h(a,v);
+        t1 = h(ROL(b, 8),v);
         d = ROL(d, 1);
-        d = d ^ b;
-        c = ROR(c, 1);
-        swap(a,c);
-        swap(b,d);
-        cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+        c ^= (t0 + t1 + sk[2 * r + 8]);
+        d ^= (t0 + 2 * t1 + sk[2 * r + 9]);
+        c = ROR(c,1);        
+        swap(a, c);
+        swap(b, d);
     }
-    swap(a,c);
-    swap(b,d);
-    a^=sk[4];
-    b^=sk[5];
-    c^=sk[6];
-    d^=sk[7];
-    cout<<"whitenning out\n";
-    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
-    STORE32L(a,&out[0]);
-    STORE32L(b,&out[4]);
-    STORE32L(c,&out[8]);
-    STORE32L(d,&out[12]);
+    swap(a, c);
+    swap(b, d);
+    a ^= sk[4];
+    b ^= sk[5];
+    c ^= sk[6];
+    d ^= sk[7];
+    cout << "whitenning out\n";
+    cout << hex << uppercase << a << '\t' << b << '\t' << c << '\t' << d << endl;
+    STORE32L(a, &out[0]);
+    STORE32L(b, &out[4]);
+    STORE32L(c, &out[8]);
+    STORE32L(d, &out[12]);
 }
 
 void decrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
 {
     uint32_t a, b, c, d;
-
+    uint32_t t0, t1;
     LOAD32L(a, &in[0]);
     LOAD32L(b, &in[4]);
     LOAD32L(c, &in[8]);
     LOAD32L(d, &in[12]);
-    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+    cout << hex << uppercase << a << '\t' << b << '\t' << c << '\t' << d << endl;
 
-    a^=sk[4];
-    b^=sk[5];
-    c^=sk[6];
-    d^=sk[7];
-    swap(a,c);
-    swap(b,d);
-    cout<<"whitenning in\n";
-    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+    a ^= sk[4];
+    b ^= sk[5];
+    c ^= sk[6];
+    d ^= sk[7];
+    cout << "whitenning in\n";
+    cout << hex << uppercase << a << '\t' << b << '\t' << c << '\t' << d << endl;
 
-    for (uint32_t r = 15; r >= 0; r--)
+    for (int32_t r = 15; r >= 0; r--)
     {
-        cout<<"round "<<static_cast<uint32_t>(r)<<endl;
-        b = ROR(b, 8);
-        a = g(a);
-        b = g(b);
-        a = a - b % (uint64_t)pow(2, 32);
-        b = a - b % (uint64_t)pow(2, 32);
-        a-=sk[2*r-8] % (uint64_t)pow(2, 32);
-        b-=sk[2*r-9] % (uint64_t)pow(2, 32);
-        //swap(a,c);
-        //swap(b,d);
-        cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
+        t0 = h(a, v);
+        t1 = h(ROL(b, 8), v);
+        c = ROL(c, 1);
+        c ^= (t0 + t1 + sk[2 * r + 8]);
+        d ^= (t0 + 2 * t1 + sk[2 * r + 9]);
+        d = ROR(d, 1);
+        swap(a, c);
+        swap(b, d);
     }
-    swap(a,c);
-    swap(b,d);
-    a^=sk[0];
-    b^=sk[1];
-    c^=sk[2];
-    d^=sk[3];
-    cout<<"whitenning out\n";
-    cout<<hex<<uppercase<<a<<'\t'<<b<<'\t'<<c<<'\t'<<d<<endl;
-    STORE32L(a,&out[0]);
-    STORE32L(b,&out[4]);
-    STORE32L(c,&out[8]);
-    STORE32L(d,&out[12]);
+    swap(a, c);
+    swap(b, d);
+    a ^= sk[0];
+    b ^= sk[1];
+    c ^= sk[2];
+    d ^= sk[3];
+    cout << "whitenning out\n";
+    cout << hex << uppercase << a << '\t' << b << '\t' << c << '\t' << d << endl;
+    STORE32L(a, &out[0]);
+    STORE32L(b, &out[4]);
+    STORE32L(c, &out[8]);
+    STORE32L(d, &out[12]);
 }
 
 int main(int argc, char* argv[])
@@ -296,58 +225,70 @@ int main(int argc, char* argv[])
     keyFile.seekg(0, ios::end);
     int sizeK = keyFile.tellg();
     keyFile.seekg(0, ios::beg);
-    if ((sizeK-1)*4 > 256)
+    if ((sizeK - 1) * 4 > 256)
         cout << "error key length";
     else
     {
-        k = std::ceil((sizeK-1)*4 / 64.0);
-        uint8_t key[32];
+        k = std::ceil((sizeK - 1) * 4 / 64.0);
+        int8_t key[32];
         //key = new uint8_t[sizeK-1];
         //memset(key, 0, sizeK-1);
-        cout<<"Key: ";
-        for(int i=0; i<sizeK-1;i++)
+        cout << "Key: ";
+        for (int i = 0; i < sizeK - 1; i++)
         {
             char c;
-            keyFile>>c;
-            cout<<c;
-            key[i] = strtoul (&c, NULL, 0);
+            keyFile >> c;
+            cout << c;
+            key[i] = strtoul(&c, NULL, 0);
         }
-        cout<<endl<<endl;
+        cout << endl << endl;
+        vector<uint32_t> m;
+        vector<vector<uint8_t>> me;
+        vector<vector<uint8_t>> mo;
+        for (int i = 0; i < sizeK / 8; i++)
+        {
+            uint32_t tmp=0;
+            for (int j = 0; j < 4; j++)
+            {
+                tmp += key[4 * i + j] * (2 << (8 * j));
+            }
+            m.push_back(tmp);
+        }
+        
 
-        vector<uint32_t> me;
-        vector<uint32_t> mo;
-
-        me.resize(k);
-        mo.resize(k);
         v.resize(k);
 
-        uint8_t j = 0,b0,b1,b2,b3;
+        uint8_t j = 0, b0, b1, b2, b3;
         boost::qvm::mat <uint8_t, 4, 1>res;
-        cout<<"Me: ";
-        for (uint8_t i = 0; i <= 2*k-2; i+=2)
+
+        cout << "Me: ";
+        for (uint8_t i = 0; i <= 2 * k - 2; i += 2)
         {
-            b0 = key[4 * i];
-            b1 = key[4 * i + 1];
-            b2 = key[4 * i + 2];
-            b3 = key[4 * i + 3];
-            me[j]=(b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
-            cout<<hex<<uppercase<<me[j]<<'\t';
+            me.push_back(vector<uint8_t>());
+            me[j].push_back(key[4 * i]);
+            me[j].push_back(key[4 * i + 1]);
+            me[j].push_back(key[4 * i + 2]);
+            me[j].push_back(key[4 * i + 3]);
+            uint32_t hh = (me[j][0]<<24) | (me[j][1] << 16) | (me[j][2] << 8) | (me[j][3]);
+            cout << hex << uppercase<< hh << ",\t";
             j++;
         }
         j = 0;
-        cout<<"\nMo: ";
-        for (uint8_t i=1;i<=2*k-1;i+=2)
+        cout << "\nMo: ";
+        for (uint8_t i = 1; i <= 2 * k - 1; i += 2)
         {
-            b0 = key[4 * i];
-            b1 = key[4 * i + 1];
-            b2 = key[4 * i + 2];
-            b3 = key[4 * i + 3];
-            mo[j]=(b0 << 24) | (b1 << 16) | (b2 << 8) | b3;
-            cout<<hex<<uppercase<<mo[j]<<'\t';
+            mo.push_back(vector<uint8_t>());
+            mo[j].push_back(key[4 * i]);
+            mo[j].push_back(key[4 * i + 1]);
+            mo[j].push_back(key[4 * i + 2]);
+            mo[j].push_back(key[4 * i + 3]);
+            uint32_t hh = mo[j][0] | (mo[j][1] << 8) | (mo[j][2] << 16) | (mo[j][3] << 24);
+            cout << hex << uppercase<<hh << ",\t";
             j++;
         }
-        cout<<"\nV:  ";
-        for(int i=k-1; i>=0; i--)
+        j = 0;
+        cout << "\nV:  ";
+        for (int i = k - 1; i >= 0; i--)
         {
             boost::qvm::mat<uint8_t, 8, 1> m =
             {
@@ -360,23 +301,23 @@ int main(int argc, char* argv[])
                 key[8 * i + 6],
                 key[8 * i + 7]
             };
-            res = M2 * m;
-
+            res = RS * m;
+            v.push_back(vector<uint8_t>());
             for (uint8_t d = 0; d < 4; d++)
             {
-                v[i] += res.a[d][0] * (2 << (8 * d));//поправить
+                v[j].push_back(res.a[d][0]);
+                //v[i] += res.a[d][0] * (2 << (8 * d));//поправить
             }
-            cout<<hex<<uppercase<<v[i]<<'\t';
+            j++;
         }
         sk.resize(40);
-        cout<<"\n\nSubkeys: \n";
+        cout << "\n\nSubkeys: \n";
         for (uint8_t i = 0; i < 20; i++)
         {
             uint32_t Ai = h(2 * i * p, me);
             uint32_t Bi = ROL(h((2 * i + 1) * p, mo), 8);
-            sk[2 * i] = Ai + Bi % int(pow(2, 32));
-            sk[2 * i + 1] = ROL((Ai + 2 * Bi % int(pow(2, 32))), 9);
-            cout<<sk[2 * i]<<'\t'<<sk[2 * i + 1]<<endl;
+            sk[2 * i] = Ai + Bi;
+            sk[2 * i + 1] = ROL((Ai + 2 * Bi), 9);
         }
 
         //delete[] key;
@@ -391,7 +332,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     outFile.open("out.txt", ios::in | ios::binary);
-    if(!outFile.is_open())
+    if (!outFile.is_open())
     {
         cout << "error out.txt";
         return 1;
@@ -399,31 +340,31 @@ int main(int argc, char* argv[])
     uint8_t text[32];
     uint8_t out[32];
 
-    while(!inFile.eof())
+    while (!inFile.eof())
     {
-        cout<<"\ntext\n";
-        for(int i=0; i<32;i++)
+        cout << "\ntext\n";
+        for (int i = 0; i < 32; i++)
         {
             char c;
-            inFile>>c;
-            cout<<c;
-            text[i] = strtoul (&c, NULL, 0);
+            inFile >> c;
+            cout << c;
+            text[i] = c;
         }
-        cout<<"\n\nencrypt:\n";
-        encrypt(text,out,sk);
-        for(uint8_t i=0; i<32;i++)
+        cout << "\n\nencrypt:\n";
+        encrypt(text, out, sk);
+        for (uint8_t i = 0; i < 16; i++)
         {
-            outFile<< hex << uppercase<<(uint32_t)out[i];
-            cout<< hex << uppercase <<(uint32_t)out[i];
+            outFile << hex << uppercase << (uint32_t)out[i];
+            cout << hex << uppercase << (uint32_t)out[i];
         }
         char c;
-        inFile>>c;
+        inFile >> c;
     }
-    cout<<"\n\decrypt:\n";
-    decrypt(out,out,sk);
+    cout << "\n\decrypt:\n";
+    decrypt(out, out, sk);
     outFile.close();
     inFile.close();
-    cout<<"\n";
+    cout << "\n";
 
     return 0;
 }
