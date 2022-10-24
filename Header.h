@@ -32,3 +32,12 @@
 #define	Mul_1	Mx_1
 #define	Mul_X	Mx_X
 #define	Mul_Y	Mx_Y
+
+#define	RS_GF_FDBK		0x14D
+
+#define	RS_rem(x)		\
+	{ uint8_t  b  = (uint8_t) (x >> 24);											 \
+	  uint32_t g2 = ((b << 1) ^ ((b & 0x80) ? RS_GF_FDBK : 0 )) & 0xFF;		 \
+	  uint32_t g3 = ((b >> 1) & 0x7F) ^ ((b & 1) ? RS_GF_FDBK >> 1 : 0 ) ^ g2 ; \
+	  x = (x << 8) ^ (g3 << 24) ^ (g2 << 16) ^ (g3 << 8) ^ b;				 \
+	}

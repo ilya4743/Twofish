@@ -92,7 +92,7 @@ vector<vector<uint8_t>> v;
 uint32_t h(uint32_t x, const vector< vector<uint8_t>>& l)
 {
     uint8_t b[4];
-    b[0]= x & 0xFF;
+    b[0] = x & 0xFF;
     b[1] = x >> 8 & 0xFF;
     b[2] = x >> 16 & 0xFF;
     b[3] = x >> 24 & 0xFF;
@@ -105,10 +105,10 @@ uint32_t h(uint32_t x, const vector< vector<uint8_t>>& l)
         b[3] = q1(b[3]) ^ l[3][3];
 
     case 3:
-        b[0] = q1(b[0]) ^ l[3][0];
-        b[1] = q1(b[1]) ^ l[3][1];
-        b[2] = q0(b[2]) ^ l[3][2];
-        b[3] = q0(b[3]) ^ l[3][3];
+        b[0] = q1(b[0]) ^ l[2][0];
+        b[1] = q1(b[1]) ^ l[2][1];
+        b[2] = q0(b[2]) ^ l[2][2];
+        b[3] = q0(b[3]) ^ l[2][3];
 
     default:
         b[0] = q1(q0(q0(b[0]) ^ l[1][0]) ^ l[0][0]);
@@ -117,7 +117,7 @@ uint32_t h(uint32_t x, const vector< vector<uint8_t>>& l)
         b[3] = q0(q1(q1(b[3]) ^ l[1][3]) ^ l[0][3]);
     }
 
-    return	
+    return
         ((M00(b[0]) ^ M01(b[1]) ^ M02(b[2]) ^ M03(b[3]))) ^
         ((M10(b[0]) ^ M11(b[1]) ^ M12(b[2]) ^ M13(b[3])) << 8) ^
         ((M20(b[0]) ^ M21(b[1]) ^ M22(b[2]) ^ M23(b[3])) << 16) ^
@@ -143,12 +143,12 @@ void encrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
 
     for (uint32_t r = 0; r < 16; r++)
     {
-        t0 = h(a,v);
-        t1 = h(ROL(b, 8),v);
+        t0 = h(a, v);
+        t1 = h(ROL(b, 8), v);
         d = ROL(d, 1);
         c ^= (t0 + t1 + sk[2 * r + 8]);
         d ^= (t0 + 2 * t1 + sk[2 * r + 9]);
-        c = ROR(c,1);        
+        c = ROR(c, 1);
         swap(a, c);
         swap(b, d);
     }
@@ -208,11 +208,51 @@ void decrypt(const uint8_t* in, uint8_t* out, const vector<uint32_t>& sk)
     STORE32L(d, &out[12]);
 }
 
+vector<uint32_t> ParseHexDword(int bits, char* srcTxt, char* dstTxt)
+{
+    int i;
+    uint32_t b = 0;
+    char c;
+    vector<uint32_t> out;
+    out.resize(bits / 32);
+
+    for (i = 0; i * 4 < bits; i++)		/* parse one nibble at a time */
+    {						/* case out the hexadecimal characters */
+        c = srcTxt[i];
+        //if (dstTxt) dstTxt[i] = c;
+        if ((c >= '0') && (c <= '9'))
+            b = c - '0';
+        else if ((c >= 'a') && (c <= 'f'))
+            b = c - 'a' + 10;
+        else if ((c >= 'A') && (c <= 'F'))
+            b = c - 'A' + 10;
+        else
+        {
+        }/* invalid hex character */
+        /* works for big and little endian! */
+        out[i / 8] |= b << (4 * ((i ^ 1) & 7));
+    }
+    return out;
+}
+uint32_t RS_MDS_Encode(uint32_t k0, uint32_t k1)
+{
+    int i, j;
+    uint32_t r;
+
+    for (i = r = 0; i < 2; i++)
+    {
+        r ^= (i) ? k0 : k1;			/* merge in 32 more key bits */
+        for (j = 0; j < 4; j++)			/* shift one byte at a time */
+            RS_rem(r);
+    }
+    return r;
+}
 int main(int argc, char* argv[])
 {
     ifstream inFile;
     ifstream keyFile;
-    ofstream outFile;
+    ofstream encryptFile;
+    ofstream decryptFile;
     vector<uint32_t> sk;
 
     keyFile.open("key.txt", ios::in | ios::binary);
@@ -230,86 +270,58 @@ int main(int argc, char* argv[])
     else
     {
         k = std::ceil((sizeK - 1) * 4 / 64.0);
-        int8_t key[32];
+        char* key = new char[sizeK];
         //key = new uint8_t[sizeK-1];
         //memset(key, 0, sizeK-1);
         cout << "Key: ";
-        for (int i = 0; i < sizeK - 1; i++)
+        for (int i = 0; i < 48; i++)
         {
             char c;
             keyFile >> c;
-            cout << c;
-            key[i] = strtoul(&c, NULL, 0);
+            key[i] = c;
         }
+        vector<uint32_t> kv;
+        kv = ParseHexDword(192, key, key);
         cout << endl << endl;
-        vector<uint32_t> m;
+        vector<uint32_t> Me;
+        vector<uint32_t> Mo;
+        vector<uint32_t> V;
         vector<vector<uint8_t>> me;
         vector<vector<uint8_t>> mo;
-        for (int i = 0; i < sizeK / 8; i++)
+
+        Me.reserve(k);
+        Mo.reserve(k);
+        V.reserve(k);
+        me.reserve(k);
+        mo.reserve(k);
+        for (int i = 0; i < k; i++)
         {
-            uint32_t tmp=0;
-            for (int j = 0; j < 4; j++)
-            {
-                tmp += key[4 * i + j] * (2 << (8 * j));
-            }
-            m.push_back(tmp);
-        }
-        
+            Me.push_back(kv[2 * i]);
+            Mo.push_back(kv[2 * i + 1]);
+            V.push_back(RS_MDS_Encode(Me[i], Mo[i]));
 
-        v.resize(k);
-
-        uint8_t j = 0, b0, b1, b2, b3;
-        boost::qvm::mat <uint8_t, 4, 1>res;
-
-        cout << "Me: ";
-        for (uint8_t i = 0; i <= 2 * k - 2; i += 2)
-        {
             me.push_back(vector<uint8_t>());
-            me[j].push_back(key[4 * i]);
-            me[j].push_back(key[4 * i + 1]);
-            me[j].push_back(key[4 * i + 2]);
-            me[j].push_back(key[4 * i + 3]);
-            uint32_t hh = (me[j][0]<<24) | (me[j][1] << 16) | (me[j][2] << 8) | (me[j][3]);
-            cout << hex << uppercase<< hh << ",\t";
-            j++;
-        }
-        j = 0;
-        cout << "\nMo: ";
-        for (uint8_t i = 1; i <= 2 * k - 1; i += 2)
-        {
+            me[i].reserve(4);
+            me[i].push_back(kv[2 * i] & 0xFF);
+            me[i].push_back(kv[2 * i] >> 8 & 0xFF);
+            me[i].push_back(kv[2 * i] >> 16 & 0xFF);
+            me[i].push_back(kv[2 * i] >> 24 & 0xFF);
+
             mo.push_back(vector<uint8_t>());
-            mo[j].push_back(key[4 * i]);
-            mo[j].push_back(key[4 * i + 1]);
-            mo[j].push_back(key[4 * i + 2]);
-            mo[j].push_back(key[4 * i + 3]);
-            uint32_t hh = mo[j][0] | (mo[j][1] << 8) | (mo[j][2] << 16) | (mo[j][3] << 24);
-            cout << hex << uppercase<<hh << ",\t";
-            j++;
-        }
-        j = 0;
-        cout << "\nV:  ";
-        for (int i = k - 1; i >= 0; i--)
-        {
-            boost::qvm::mat<uint8_t, 8, 1> m =
-            {
-                key[8 * i],
-                key[8 * i + 1] ,
-                key[8 * i + 2],
-                key[8 * i + 3],
-                key[8 * i + 4],
-                key[8 * i + 5],
-                key[8 * i + 6],
-                key[8 * i + 7]
-            };
-            res = RS * m;
+            mo[i].reserve(4);
+            mo[i].push_back(kv[2 * i + 1] & 0xFF);
+            mo[i].push_back(kv[2 * i + 1] >> 8 & 0xFF);
+            mo[i].push_back(kv[2 * i + 1] >> 16 & 0xFF);
+            mo[i].push_back(kv[2 * i + 1] >> 24 & 0xFF);
+
             v.push_back(vector<uint8_t>());
-            for (uint8_t d = 0; d < 4; d++)
-            {
-                v[j].push_back(res.a[d][0]);
-                //v[i] += res.a[d][0] * (2 << (8 * d));//поправить
-            }
-            j++;
+            v[i].reserve(4);
+            v[i].push_back(V[i] & 0xFF);
+            v[i].push_back(V[i] >> 8 & 0xFF);
+            v[i].push_back(V[i] >> 16 & 0xFF);
+            v[i].push_back(V[i] >> 24 & 0xFF);
         }
+
         sk.resize(40);
         cout << "\n\nSubkeys: \n";
         for (uint8_t i = 0; i < 20; i++)
@@ -320,7 +332,7 @@ int main(int argc, char* argv[])
             sk[2 * i + 1] = ROL((Ai + 2 * Bi), 9);
         }
 
-        //delete[] key;
+        delete[] key;
     }
     keyFile.close();
 
@@ -331,14 +343,15 @@ int main(int argc, char* argv[])
         cout << "error in.txt";
         return 1;
     }
-    outFile.open("out.txt", ios::in | ios::binary);
-    if (!outFile.is_open())
+    encryptFile.open("encrypt.txt", ios::out | ios::binary);
+    if (!encryptFile.is_open())
     {
         cout << "error out.txt";
         return 1;
     }
-    uint8_t text[32];
-    uint8_t out[32];
+
+    uint8_t* text = new uint8_t[32];
+    uint8_t* out = new uint8_t[32];
 
     while (!inFile.eof())
     {
@@ -352,19 +365,33 @@ int main(int argc, char* argv[])
         }
         cout << "\n\nencrypt:\n";
         encrypt(text, out, sk);
-        for (uint8_t i = 0; i < 16; i++)
+        for (uint8_t i = 0; i < 32; i++)
         {
-            outFile << hex << uppercase << (uint32_t)out[i];
+            encryptFile << hex << uppercase << (uint32_t)out[i];
             cout << hex << uppercase << (uint32_t)out[i];
         }
         char c;
         inFile >> c;
     }
+    encryptFile.close();
+    inFile.close();
+
+    decryptFile.open("decrypt.txt", ios::out | ios::binary);
+    if (!decryptFile.is_open())
+    {
+        cout << "error out.txt";
+        return 1;
+    }
     cout << "\n\decrypt:\n";
     decrypt(out, out, sk);
-    outFile.close();
-    inFile.close();
+    for (uint8_t i = 0; i < 32; i++)
+    {
+        decryptFile << hex << uppercase << (uint32_t)out[i];
+        cout << hex << uppercase << (uint32_t)out[i];
+    }
+    decryptFile.close();
     cout << "\n";
-
+    delete[] out;
+    delete[] text;
     return 0;
 }
