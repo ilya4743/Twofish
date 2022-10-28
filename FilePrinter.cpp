@@ -1,5 +1,7 @@
 #include "FilePrinter.h"
 #include <string>
+#include <iomanip>
+
 pair<uint8_t*, int> FilePrinter::readKeyFile(const char* filename)
 {
     try
@@ -56,13 +58,15 @@ const uint8_t* FilePrinter::readInputFile32()
     string s;
     
     uint8_t *text, c;
-    text = new uint8_t[32];
+    text = new uint8_t[16];
     int j = 0;
-    while (!inFile.eof()&&j!= 32)
+    while (!inFile.eof()&&j!= 16)
     {
+            inFile >>c;
+            text[j] = strtoul((char*)&c,0,16)<<4;
             inFile >> c;
-            s += c;
-            text[++j] = c;
+            text[j++] |= strtoul((char*)&c, 0, 16);
+
             cout << c;
     }
     cout << '\n';
@@ -91,7 +95,7 @@ void FilePrinter::openEncryptFile(const char* filename)
 void FilePrinter::writeEncryptFile32(const uint8_t* encrypt)
 {
     for (int i = 0; i < 16; i++)
-        encryptFile << hex << uppercase << (uint32_t)encrypt[i];
+        encryptFile << hex << uppercase << setw(2)<< setfill('0') <<(uint32_t)encrypt[i];
 }
 
 void FilePrinter::closeEncryptFile()
@@ -115,7 +119,7 @@ void FilePrinter::openDecryptFile(const char* filename)
 
 void FilePrinter::writeDecryptFile32(const uint8_t* decrypt)
 {
-    for (int i = 0; i < 32; i++)
+    for (int i = 0; i < 16; i++)
     {
         decryptFile << hex << uppercase << (uint32_t)decrypt[i];
         cout << (uint32_t)decrypt[i];

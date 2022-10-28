@@ -179,6 +179,7 @@ void Twofish::keySchedule(uint8_t* key, uint32_t k)
         v[i].push_back(V[i] >> 24 & 0xFF);
     }
     reverse(v.begin(), v.end());
+    reverse(V.begin(), V.end());
     sk.reserve(40);
     for (uint8_t i = 0; i < 20; i++)
     {
@@ -200,7 +201,10 @@ void Twofish::encrypt(const uint8_t* in, uint8_t* out)
     b = vec[1];
     c = vec[2];
     d = vec[3];
-
+    LOAD32L(a, &in[0]);
+    LOAD32L(b, &in[4]);
+    LOAD32L(c, &in[8]);
+    LOAD32L(d, &in[12]);
     a ^= sk[0];
     b ^= sk[1];
     c ^= sk[2];
