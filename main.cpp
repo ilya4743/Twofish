@@ -1,7 +1,6 @@
 #include "Twofish.h"
 #include "FilePrinter.h"
 #include <iostream>
-#include <fstream>
 #include <vector>
 
 using namespace std;
@@ -9,21 +8,24 @@ int main(int argc, char* argv[])
 {
     try
     {
-        uint8_t out[16];
+        vector<uint8_t>in;
+        vector<uint8_t>encrypt;
+        vector<uint8_t>decrypt;
 
         Twofish twofish;
         FilePrinter filePrinter;
-        pair<uint8_t*, int> key=filePrinter.readKeyFile("key.txt");
+        vector<uint8_t> key=filePrinter.readKeyFile("key.txt");
         int sizeInputFile=filePrinter.openInputFile("in.txt");
         filePrinter.openEncryptFile("encrypt.txt");
         filePrinter.openDecryptFile("decrypt.txt");
-        twofish.keySchedule(key.first, key.second);
+        twofish.keySchedule(move(key));
         for (int i = 0; i < sizeInputFile; i += 32)
         {
-            twofish.encrypt(filePrinter.readInputFile32(), out);
-            filePrinter.writeEncryptFile32(out);
-            twofish.decrypt(out, out);
-            filePrinter.writeDecryptFile32(out);
+            in = filePrinter.readInputFile32();
+            encrypt=twofish.encrypt(move(in));
+            filePrinter.writeEncryptFile32(encrypt);
+            decrypt=twofish.decrypt(move(encrypt));
+            filePrinter.writeDecryptFile32(decrypt);
         }
         filePrinter.closeInputFile();
         filePrinter.closeEncryptFile();

@@ -2,26 +2,6 @@
 
 using namespace std;
 
-uint8_t k;
-
-const uint32_t p = 16843009;
-
-boost::qvm::mat<uint8_t, 4, 16> Tq0 =
-{
-    0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4,
-    0xE, 0XC, 0XB, 0X8, 0X1, 0X2, 0X3, 0X5, 0XF, 0X4, 0XA, 0X6, 0X7, 0X0, 0X9, 0XD,
-    0XB, 0XA, 0X5, 0XE, 0X6, 0XD, 0X9, 0X0, 0XC, 0X8, 0XF, 0X3, 0X2, 0X4, 0X7, 0X1,
-    0XD, 0X7, 0XF, 0X4, 0X1, 0X2, 0X6, 0XE, 0X9, 0XB, 0X3, 0X0, 0X8, 0X5, 0XC, 0XA
-};
-
-boost::qvm::mat<uint8_t, 4, 16> Tq1 =
-{
-    0X2, 0X8, 0XB, 0XD, 0XF, 0X7, 0X6, 0XE, 0X3, 0X1, 0X9, 0X4, 0X0, 0XA, 0XC, 0X5,
-    0X1, 0XE, 0X2, 0XB, 0X4, 0XC, 0X3, 0X7, 0X6, 0XD, 0XA, 0X5, 0XF, 0X9, 0X0, 0X8,
-    0X4, 0XC, 0X7, 0X5, 0X1, 0X6, 0X9, 0XA, 0X0, 0XE, 0XD, 0X8, 0X2, 0XB, 0X3, 0XF,
-    0xB, 0X9, 0X5, 0X1, 0XC, 0X3, 0XD, 0XE, 0X6, 0X4, 0X7, 0XF, 0X2, 0X0, 0X8, 0XA
-};
-
 uint8_t Twofish::q0(uint8_t x)
 {
     uint8_t a0, b0, a2, b2, a4, b4, c00;
@@ -89,7 +69,7 @@ uint32_t Twofish::h(uint32_t x, const vector<vector<uint8_t>>& l)
         ((M30(b[0]) ^ M31(b[1]) ^ M32(b[2]) ^ M33(b[3])) << 24);
 }
 
-vector<uint32_t> Twofish::ParseHexDword(int bits, char* srcTxt)
+inline vector<uint32_t> Twofish::ParseHexDword(int bits, vector<uint8_t>&& srcTxt)
 {
     int i;
     uint32_t b = 0;
@@ -106,9 +86,6 @@ vector<uint32_t> Twofish::ParseHexDword(int bits, char* srcTxt)
             b = c - 'a' + 10;
         else if ((c >= 'A') && (c <= 'F'))
             b = c - 'A' + 10;
-        else
-        {
-        }
 
         out[i / 8] |= b << (4 * ((i ^ 1) & 7));
     }
@@ -140,11 +117,11 @@ void Twofish::printSubkeys()
     }
 }
 
-void Twofish::keySchedule(uint8_t* key, uint32_t k)
+void Twofish::keySchedule(vector<uint8_t>&& key)
 {
-    this->k = k;
+    this->k = (key.size()*4)/64;
     vector<uint32_t> kv;
-    kv = ParseHexDword(k*64, (char*)key);
+    kv = ParseHexDword(k*64, move(key));
 
     Me.reserve(k);
     Mo.reserve(k);
@@ -191,84 +168,89 @@ void Twofish::keySchedule(uint8_t* key, uint32_t k)
 }
 
 
-void Twofish::encrypt(const uint8_t* in, uint8_t* out)
+vector<uint8_t> Twofish::encrypt(vector<uint8_t>&& in)
 {
-    uint32_t a, b, c, d;
+    uint32_t x[4];
     uint32_t t0, t1;
-    vector<uint32_t> vec;
-    vec=ParseHexDword(64*k, (char*)in);
-    a = vec[0];
-    b = vec[1];
-    c = vec[2];
-    d = vec[3];
-    LOAD32L(a, &in[0]);
-    LOAD32L(b, &in[4]);
-    LOAD32L(c, &in[8]);
-    LOAD32L(d, &in[12]);
-    a ^= sk[0];
-    b ^= sk[1];
-    c ^= sk[2];
-    d ^= sk[3];
+    vector<uint8_t> out;
+    out.reserve(16);
+
+    x[0] = in[0] | in[1] << 8 | in[2] << 16 | in[3] << 24;
+    x[1] = in[4] | in[5] << 8 | in[6] << 16 | in[7] << 24;
+    x[2] = in[8] | in[9] << 8 | in[10] << 16 | in[11] << 24;
+    x[3] = in[12] | in[13] << 8 | in[14] << 16 | in[15] << 24;
+
+    x[0] ^= sk[0];
+    x[1] ^= sk[1];
+    x[2] ^= sk[2];
+    x[3] ^= sk[3];
 
     for (uint32_t r = 0; r < 16; r++)
     {
-        t0 = h(a,v);
-        t1 = h(ROL(b, 8),v);
-        d = ROL(d, 1);
-        c ^= (t0 + t1 + sk[2 * r + 8]);
-        d ^= (t0 + 2 * t1 + sk[2 * r + 9]);
-        c = ROR(c,1);        
-        swap(a, c);
-        swap(b, d);
+        t0 = h(x[0],v);
+        t1 = h(ROL(x[1], 8),v);
+        x[3] = ROL(x[3], 1);
+        x[2] ^= (t0 + t1 + sk[2 * r + 8]);
+        x[3] ^= (t0 + 2 * t1 + sk[2 * r + 9]);
+        x[2] = ROR(x[2],1);        
+        swap(x[0], x[2]);
+        swap(x[1], x[3]);
     }
-    swap(a, c);
-    swap(b, d);
-    a ^= sk[4];
-    b ^= sk[5];
-    c ^= sk[6];
-    d ^= sk[7];
-    string s;
+    swap(x[0], x[2]);
+    swap(x[1], x[3]);
 
-    STORE32L(a, &out[0]);
-    STORE32L(b, &out[4]);
-    STORE32L(c, &out[8]);
-    STORE32L(d, &out[12]);
+    x[0] ^= sk[4];
+    x[1] ^= sk[5];
+    x[2] ^= sk[6];
+    x[3] ^= sk[7];
+
+    for (uint8_t i = 0; i < 4; i++)
+        for (uint8_t j = 0; j < 4; j++)
+            out.push_back(x[i]>>j*8 & 0xFF);
+
+    return out;
 }
 
-void Twofish::decrypt(const uint8_t* in, uint8_t* out)
+vector<uint8_t> Twofish::decrypt(vector<uint8_t>&& in)
 {
-    uint32_t a, b, c, d;
+    uint32_t x[4];    
     uint32_t t0, t1;
-    LOAD32L(a, &in[0]);
-    LOAD32L(b, &in[4]);
-    LOAD32L(c, &in[8]);
-    LOAD32L(d, &in[12]);
+    uint32_t a, b, c, d;
+    vector<uint8_t> out;
+    out.reserve(16);
 
-    a ^= sk[4];
-    b ^= sk[5];
-    c ^= sk[6];
-    d ^= sk[7];
+    x[0] = in[0] | in[1] << 8 | in[2] << 16 | in[3] << 24;
+    x[1] = in[4] | in[5] << 8 | in[6] << 16 | in[7] << 24;
+    x[2] = in[8] | in[9] << 8 | in[10] << 16 | in[11] << 24;
+    x[3] = in[12] | in[13] << 8 | in[14] << 16 | in[15] << 24;
+
+    x[0] ^= sk[4];
+    x[1] ^= sk[5];
+    x[2] ^= sk[6];
+    x[3] ^= sk[7];
 
     for (int32_t r = 15; r >= 0; r--)
     {
-        t0 = h(a, v);
-        t1 = h(ROL(b, 8), v);
-        c = ROL(c, 1);
-        c ^= (t0 + t1 + sk[2 * r + 8]);
-        d ^= (t0 + 2 * t1 + sk[2 * r + 9]);
-        d = ROR(d, 1);
-        swap(a, c);
-        swap(b, d);
+        t0 = h(x[0], v);
+        t1 = h(ROL(x[1], 8), v);
+        x[2] = ROL(x[2], 1);
+        x[2] ^= (t0 + t1 + sk[2 * r + 8]);
+        x[3] ^= (t0 + 2 * t1 + sk[2 * r + 9]);
+        x[3] = ROR(x[3], 1);
+        swap(x[0], x[2]);
+        swap(x[1], x[3]);
     }
-    swap(a, c);
-    swap(b, d);
-    a ^= sk[0];
-    b ^= sk[1];
-    c ^= sk[2];
-    d ^= sk[3];
+    swap(x[0], x[2]);
+    swap(x[1], x[3]);
 
-    STORE32L(a, &out[0]);
-    STORE32L(b, &out[4]);
-    STORE32L(c, &out[8]);
-    STORE32L(d, &out[12]);
+    x[0] ^= sk[0];
+    x[1] ^= sk[1];
+    x[2] ^= sk[2];
+    x[3] ^= sk[3];
+
+    for (uint8_t i = 0; i < 4; i++)
+        for (uint8_t j = 0; j < 4; j++)
+            out.push_back(x[i] >> j * 8 & 0xFF);
+    
+    return out;
 }
