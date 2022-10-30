@@ -1,6 +1,5 @@
 #include "FilePrinter.h"
 
-
 vector<uint8_t> FilePrinter::readKeyFile(const char* filename)
 {
     try
@@ -8,12 +7,12 @@ vector<uint8_t> FilePrinter::readKeyFile(const char* filename)
         vector<uint8_t> key;
         keyFile.open(filename, ios::in | ios::binary);
         if (!keyFile)
-            throw exception("file with key not found");
+            throw exception();
         keyFile.seekg(0, ios::end);
         int length = keyFile.tellg();
         keyFile.seekg(0, ios::beg);
         if ((length - 1) * 4 > 256)
-            throw exception("error key length");
+            throw exception();
         //if ((length-1)%64)
 
         else
@@ -41,7 +40,7 @@ int FilePrinter::openInputFile(const char* filename)
     {
         inFile.open(filename, ios::in | ios::binary);
         if (!inFile.is_open())
-            throw exception(filename);
+            throw exception();
         inFile.seekg(0, ios::end);
         int length = inFile.tellg();
         inFile.seekg(0, ios::beg);
@@ -83,7 +82,7 @@ void FilePrinter::openEncryptFile(const char* filename)
     {
         encryptFile.open(filename, ios::out | ios::binary);
         if (!encryptFile.is_open())
-            throw exception(filename);
+            throw exception();
     }
     catch (exception e)
     {
@@ -114,7 +113,7 @@ void FilePrinter::openDecryptFile(const char* filename)
     {
         decryptFile.open(filename, ios::out | ios::binary);
         if (!decryptFile.is_open())
-            throw exception(filename);
+            throw exception();
     }
     catch (exception e)
     {
