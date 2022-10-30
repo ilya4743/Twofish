@@ -14,7 +14,7 @@ private:
 
 	const uint32_t p = 16843009;
 
-	const boost::qvm::mat<uint8_t, 4, 16> Tq0 =
+	const uint8_t Tq0[4][16] =
 	{
 		0x8, 0x1, 0x7, 0xD, 0x6, 0xF, 0x3, 0x2, 0x0, 0xB, 0x5, 0x9, 0xE, 0xC, 0xA, 0x4,
 		0xE, 0XC, 0XB, 0X8, 0X1, 0X2, 0X3, 0X5, 0XF, 0X4, 0XA, 0X6, 0X7, 0X0, 0X9, 0XD,
@@ -22,7 +22,7 @@ private:
 		0XD, 0X7, 0XF, 0X4, 0X1, 0X2, 0X6, 0XE, 0X9, 0XB, 0X3, 0X0, 0X8, 0X5, 0XC, 0XA
 	};
 
-	const boost::qvm::mat<uint8_t, 4, 16> Tq1 =
+	const uint8_t Tq1[4][16] =
 	{
 		0X2, 0X8, 0XB, 0XD, 0XF, 0X7, 0X6, 0XE, 0X3, 0X1, 0X9, 0X4, 0X0, 0XA, 0XC, 0X5,
 		0X1, 0XE, 0X2, 0XB, 0X4, 0XC, 0X3, 0X7, 0X6, 0XD, 0XA, 0X5, 0XF, 0X9, 0X0, 0X8,

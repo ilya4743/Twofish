@@ -14,12 +14,14 @@ vector<uint8_t> FilePrinter::readKeyFile(const char* filename)
         keyFile.seekg(0, ios::beg);
         if ((length - 1) * 4 > 256)
             throw exception("error key length");
+        //if ((length-1)%64)
+
         else
         {        
             key.reserve(length);
             for (int i = 0; i < length; i++)
             {
-                char c;
+                char c=0;
                 keyFile >> c;
                 key.push_back(c);
             }
