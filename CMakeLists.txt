@@ -20,11 +20,15 @@ set(PROJECT_SOURCES
         mainwindow.h
         mainwindow.ui
         def.h
-        FilePrinter.h
+        FileManager.h
         twofish.h
-        FilePrinter.cpp
+        FileManager.cpp
         main1.cpp
         twofish.cpp
+        controller.h
+        controller.cpp
+        model.h
+        model.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

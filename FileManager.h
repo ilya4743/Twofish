@@ -7,7 +7,7 @@
 
 using namespace std;
 
-class FilePrinter
+class FileManager
 {
 private:
     ifstream inFile;

@@ -1,6 +1,6 @@
-#include "FilePrinter.h"
+#include "FileManager.h"
 
-vector<uint8_t> FilePrinter::readKeyFile(const char* filename)
+vector<uint8_t> FileManager::readKeyFile(const char* filename)
 {
     try
     {    
@@ -34,7 +34,7 @@ vector<uint8_t> FilePrinter::readKeyFile(const char* filename)
     }
 }
 
-int FilePrinter::openInputFile(const char* filename)
+int FileManager::openInputFile(const char* filename)
 {
     try
     {
@@ -52,7 +52,7 @@ int FilePrinter::openInputFile(const char* filename)
     }
 }
 
-vector<uint8_t> FilePrinter::readInputFile32()
+vector<uint8_t> FileManager::readInputFile32()
 {
     vector<uint8_t> text;
     text.reserve(16);
@@ -71,12 +71,12 @@ vector<uint8_t> FilePrinter::readInputFile32()
     return text;
 }
 
-void FilePrinter::closeInputFile()
+void FileManager::closeInputFile()
 {
     inFile.close();
 }
 
-void FilePrinter::openEncryptFile(const char* filename)
+void FileManager::openEncryptFile(const char* filename)
 {
     try
     {
@@ -90,24 +90,24 @@ void FilePrinter::openEncryptFile(const char* filename)
     }
 }
 
-void FilePrinter::writeEncryptFile32(vector<uint8_t>&& encrypt)
+void FileManager::writeEncryptFile32(vector<uint8_t>&& encrypt)
 {
     for (int i = 0; i < encrypt.size(); i++)
         encryptFile << hex << uppercase << setw(2)<< setfill('0') << static_cast<uint32_t>(encrypt[i]);
 }
 
-void FilePrinter::writeEncryptFile32(vector<uint8_t> encrypt)
+void FileManager::writeEncryptFile32(vector<uint8_t> encrypt)
 {
     for (int i = 0; i < encrypt.size(); i++)
         encryptFile << hex << uppercase << setw(2) << setfill('0') << static_cast<uint32_t>(encrypt[i]);
 }
 
-void FilePrinter::closeEncryptFile()
+void FileManager::closeEncryptFile()
 {
     encryptFile.close();
 }
 
-void FilePrinter::openDecryptFile(const char* filename)
+void FileManager::openDecryptFile(const char* filename)
 {
     try
     {
@@ -121,19 +121,19 @@ void FilePrinter::openDecryptFile(const char* filename)
     }
 }
 
-void FilePrinter::writeDecryptFile32(vector<uint8_t> decrypt)
+void FileManager::writeDecryptFile32(vector<uint8_t> decrypt)
 {
     for (int i = 0; i < decrypt.size(); i++)
         decryptFile << hex << uppercase << static_cast<uint32_t>(decrypt[i]);
 }
 
-void FilePrinter::writeDecryptFile32(vector<uint8_t>&& decrypt)
+void FileManager::writeDecryptFile32(vector<uint8_t>&& decrypt)
 {
     for (int i = 0; i < decrypt.size(); i++)
         decryptFile << hex << uppercase << static_cast<uint32_t>(decrypt[i]);
 }
 
-void FilePrinter::closeDecryptFile()
+void FileManager::closeDecryptFile()
 {
     decryptFile.close();
 }
