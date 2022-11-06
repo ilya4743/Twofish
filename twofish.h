@@ -48,7 +48,7 @@ private:
 public:
 	void setKey();	
 	void keySchedule(vector<uint8_t>&& key);
-
+    void keyReset();
 	vector<uint8_t> encrypt(vector<uint8_t>&& in);
 	vector<uint8_t> decrypt(vector<uint8_t>&& in);
 	void printSubkeys();

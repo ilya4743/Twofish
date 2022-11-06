@@ -1,7 +1,8 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
-#include "model.h"
 #include "FileManager.h"
+#include "twofish.h"
+#include "myexception.h"
 
 class Controller
 {
@@ -10,12 +11,17 @@ private:
     Twofish* twofish;
     Controller(const Controller& controller);
     Controller& operator=(Controller other);
+    inline vector<uint8_t>keyToUint8_t(string &&key, bool isKeyHex);
+    inline vector<uint8_t>PTToUint8_t(string &&text, bool isPTHex);
 
 public:
     Controller(Twofish * _twofish):twofish(_twofish){fileManager=new FileManager;}
-    string encrypt(string &&key, string &&text);
-    string decrypt(string &&key, string &&text);
+    string encrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex);
+    string decrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex);
     ~Controller(){delete fileManager;}
+    void printResults(string &&filename, string &&out);
+    string loadKey(string &&filename);
+    string loadInputText(string &&filename);
 };
 
 #endif // CONTROLLER_H

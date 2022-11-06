@@ -1,139 +1,57 @@
 #include "FileManager.h"
 
-vector<uint8_t> FileManager::readKeyFile(const char* filename)
+string FileManager::loadFile(string&& filename)
 {
+    ifstream inFile;
     try
     {    
-        vector<uint8_t> key;
-        keyFile.open(filename, ios::in | ios::binary);
-        if (!keyFile)
-            throw exception();
-        keyFile.seekg(0, ios::end);
-        int length = keyFile.tellg();
-        keyFile.seekg(0, ios::beg);
-        if ((length - 1) * 4 > 256)
-            throw exception();
-        //if ((length-1)%64)
-
-        else
-        {        
-            key.reserve(length);
-            for (int i = 0; i < length; i++)
-            {
-                char c=0;
-                keyFile >> c;
-                key.push_back(c);
-            }
-        }
-        keyFile.close();
-        return key;
-    }
-    catch (exception e)
-    {
-        cout<<e.what();
-    }
-}
-
-int FileManager::openInputFile(const char* filename)
-{
-    try
-    {
+        string data;
         inFile.open(filename, ios::in | ios::binary);
-        if (!inFile.is_open())
-            throw exception();
+        if (!inFile)
+        {
+            string msg(filename+"\nошибка открытия, возможно файл не найден");
+            throw myexception(msg);
+        }
+
         inFile.seekg(0, ios::end);
         int length = inFile.tellg();
         inFile.seekg(0, ios::beg);
-        return length;
+        data.reserve(length);
+        for (int i = 0; i < length-1; i++)
+        {
+            char c=0;
+            inFile >> c;
+            data.push_back(c);
+        }
+
+        inFile.close();
+        return data;
     }
-    catch (exception e)
+    catch (myexception& e)
     {
-        e.what();
+        throw   e;
     }
 }
 
-vector<uint8_t> FileManager::readInputFile32()
+void FileManager::saveFile(string&& filename, string&& text)
 {
-    vector<uint8_t> text;
-    text.reserve(16);
-    int j = 0;
-    while (!inFile.eof()&&j!= 16)
-    {    
-        uint8_t c = 0;
-        inFile >>c;
-        text.push_back(strtoul((char*)&c, 0, 16) << 4);
-        text[j] = strtoul((char*)&c,0,16)<<4;
-        c = 0;
-        inFile >> c;
-        text[j] |= strtoul((char*)&c, 0, 16);
-        j++;
-    }
-    return text;
-}
-
-void FileManager::closeInputFile()
-{
-    inFile.close();
-}
-
-void FileManager::openEncryptFile(const char* filename)
-{
+    ofstream outFile;
     try
     {
-        encryptFile.open(filename, ios::out | ios::binary);
-        if (!encryptFile.is_open())
-            throw exception();
+        outFile.open(filename, ios::out | ios::binary);
+        if (!outFile.is_open())
+        {
+            string msg=filename+"\nошибка открытия файла";
+            throw myexception(msg);
+        }
+
+        for (int i = 0; i < text.size(); i++)
+            outFile <<text[i];
+
+        outFile.close();
     }
-    catch (exception e)
+    catch (myexception& e)
     {
-        e.what();
+        throw myexception();
     }
-}
-
-void FileManager::writeEncryptFile32(vector<uint8_t>&& encrypt)
-{
-    for (int i = 0; i < encrypt.size(); i++)
-        encryptFile << hex << uppercase << setw(2)<< setfill('0') << static_cast<uint32_t>(encrypt[i]);
-}
-
-void FileManager::writeEncryptFile32(vector<uint8_t> encrypt)
-{
-    for (int i = 0; i < encrypt.size(); i++)
-        encryptFile << hex << uppercase << setw(2) << setfill('0') << static_cast<uint32_t>(encrypt[i]);
-}
-
-void FileManager::closeEncryptFile()
-{
-    encryptFile.close();
-}
-
-void FileManager::openDecryptFile(const char* filename)
-{
-    try
-    {
-        decryptFile.open(filename, ios::out | ios::binary);
-        if (!decryptFile.is_open())
-            throw exception();
-    }
-    catch (exception e)
-    {
-        e.what();
-    }
-}
-
-void FileManager::writeDecryptFile32(vector<uint8_t> decrypt)
-{
-    for (int i = 0; i < decrypt.size(); i++)
-        decryptFile << hex << uppercase << static_cast<uint32_t>(decrypt[i]);
-}
-
-void FileManager::writeDecryptFile32(vector<uint8_t>&& decrypt)
-{
-    for (int i = 0; i < decrypt.size(); i++)
-        decryptFile << hex << uppercase << static_cast<uint32_t>(decrypt[i]);
-}
-
-void FileManager::closeDecryptFile()
-{
-    decryptFile.close();
 }

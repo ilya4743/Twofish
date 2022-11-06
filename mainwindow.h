@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QFileDialog>
+#include <QMessageBox>
 #include "controller.h"
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,5 +24,9 @@ private slots:
     void on_pushButton_clicked();
     void on_pushButton_2_clicked();
     void on_pushButton_3_clicked();
+    void on_action_triggered();
+    void on_action_2_triggered();
+    void on_action_3_triggered();
+    void on_action_5_triggered();
 };
 #endif // MAINWINDOW_H

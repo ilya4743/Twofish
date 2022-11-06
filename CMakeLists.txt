@@ -23,12 +23,10 @@ set(PROJECT_SOURCES
         FileManager.h
         twofish.h
         FileManager.cpp
-        main1.cpp
         twofish.cpp
         controller.h
         controller.cpp
-        model.h
-        model.cpp
+        myexception.h
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

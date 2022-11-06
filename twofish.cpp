@@ -119,9 +119,11 @@ void Twofish::printSubkeys()
 
 void Twofish::keySchedule(vector<uint8_t>&& key)
 {
-    this->k = (key.size()*4)/64;
+    this->k = (key.size()*8)/64;
     vector<uint32_t> kv;
-    kv = ParseHexDword(k*64, move(key));
+    kv.reserve(key.size()/4);
+    for(int i=0; i<key.size()/4;i++)
+        kv.push_back(key[i]<<24 | key[i+1] << 16 | key[i+2] << 8 | key[i+3] << 0);
 
     Me.reserve(k);
     Mo.reserve(k);
@@ -167,6 +169,16 @@ void Twofish::keySchedule(vector<uint8_t>&& key)
     }
 }
 
+void Twofish::keyReset()
+{
+    Me.clear();
+    me.clear();
+    Mo.clear();
+    mo.clear();
+    V.clear();
+    v.clear();
+    sk.clear();
+}
 
 vector<uint8_t> Twofish::encrypt(vector<uint8_t>&& in)
 {

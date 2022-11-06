@@ -17,51 +17,36 @@
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="1" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>Ключ</string>
+      <item row="5" column="0" rowspan="2">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string/>
         </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QRadioButton" name="radioButton_3">
+           <property name="text">
+            <string>HEX</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="radioButton_4">
+           <property name="text">
+            <string>PLAINTEXT</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
-      <item row="6" column="0">
-       <widget class="QRadioButton" name="radioButton_2">
-        <property name="text">
-         <string>HEX</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="0">
-       <widget class="QRadioButton" name="radioButton_4">
-        <property name="text">
-         <string>PLAINTEXT</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="0">
+      <item row="13" column="0">
        <widget class="QPushButton" name="pushButton_2">
         <property name="text">
          <string>Расшифровать</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0">
-       <widget class="QRadioButton" name="radioButton">
-        <property name="text">
-         <string>PLAINTEXT</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QLineEdit" name="lineEdit"/>
-      </item>
-      <item row="8" column="0">
-       <widget class="QPushButton" name="pushButton">
-        <property name="text">
-         <string>Зашифровать</string>
         </property>
        </widget>
       </item>
@@ -78,15 +63,28 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QRadioButton" name="radioButton_3">
+      <item row="8" column="1">
+       <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
+      </item>
+      <item row="12" column="0">
+       <widget class="QPushButton" name="pushButton">
         <property name="text">
-         <string>HEX</string>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
+         <string>Зашифровать</string>
         </property>
        </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Ключ</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLineEdit" name="lineEdit"/>
+      </item>
+      <item row="8" column="0">
+       <widget class="QPlainTextEdit" name="plainTextEdit"/>
       </item>
       <item row="0" column="1">
        <widget class="QLabel" name="label_2">
@@ -98,17 +96,37 @@
         </property>
        </widget>
       </item>
-      <item row="5" column="0">
-       <widget class="QPlainTextEdit" name="plainTextEdit"/>
-      </item>
-      <item row="5" column="1">
-       <widget class="QPlainTextEdit" name="plainTextEdit_2"/>
-      </item>
-      <item row="8" column="1" rowspan="2">
+      <item row="12" column="1" rowspan="2">
        <widget class="QPushButton" name="pushButton_3">
         <property name="text">
          <string>Поменять местами</string>
         </property>
+       </widget>
+      </item>
+      <item row="10" column="0" rowspan="2">
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string/>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QRadioButton" name="radioButton_2">
+           <property name="text">
+            <string>HEX</string>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="radioButton">
+           <property name="text">
+            <string>PLAINTEXT</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </item>
      </layout>
@@ -128,9 +146,19 @@
     <property name="title">
      <string>Файл</string>
     </property>
+    <addaction name="action_2"/>
+    <addaction name="action_3"/>
+    <addaction name="separator"/>
     <addaction name="action"/>
    </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>Справка</string>
+    </property>
+    <addaction name="action_5"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_2"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -147,6 +175,21 @@
   <action name="action">
    <property name="text">
     <string>Выход</string>
+   </property>
+  </action>
+  <action name="action_2">
+   <property name="text">
+    <string>Сохранить результат</string>
+   </property>
+  </action>
+  <action name="action_3">
+   <property name="text">
+    <string>Загрузить данные</string>
+   </property>
+  </action>
+  <action name="action_5">
+   <property name="text">
+    <string>О программе</string>
    </property>
   </action>
  </widget>

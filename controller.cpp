@@ -17,7 +17,7 @@ string BytesToHexStr(vector<uint8_t> &&aInStr)
     return hex_str;
 }
 
-vector<uint8_t> string_to_hex(string&& in)
+inline vector<uint8_t> string_to_hex(string&& in)
 {
     vector<uint8_t> out;
     out.reserve(in.size()/2);
@@ -31,6 +31,8 @@ vector<uint8_t> string_to_hex(string&& in)
             in[i-1] = in[i-1] - 'a' + 10;
         else if ((in[i-1] >= 'A') && (in[i-1] <= 'F'))
             in[i-1] = in[i-1] - 'A' + 10;
+        else if(in[i-1]!=0)
+            throw myexception("Входные данные не 16-ричное числа");
         out.push_back(in[i-1]<<4);
         if ((in[i] >= '0') && (in[i] <= '9'))
             in[i] = in[i] - '0';
@@ -38,55 +40,67 @@ vector<uint8_t> string_to_hex(string&& in)
             in[i] = in[i] - 'a' + 10;
         else if ((in[i] >= 'A') && (in[i] <= 'F'))
             in[i] = in[i] - 'A' + 10;
+        else if(in[i]!=0)
+            throw myexception("Входные данные не 16-ричное числа");
         out[j]|=in[i];
         j++;
     }
     return out;
 }
 
-inline vector<uint8_t> ParseHexDword(string&& srcTxt)
+inline vector<uint8_t>Controller::keyToUint8_t(string &&key, bool isKeyHex)
 {
-    int i;
-    uint8_t b = 0;
-    char c;
-    vector<uint8_t> out;
-    out.reserve(srcTxt.size()/2);
-
-    for (i = 0; i < srcTxt.size(); i++)
+    if(isKeyHex)
     {
-        c = srcTxt[i];
-        if ((c >= '0') && (c <= '9'))
-            b = c - '0';
-        else if ((c >= 'a') && (c <= 'f'))
-            b = c - 'a' + 10;
-        else if ((c >= 'A') && (c <= 'F'))
-            b = c - 'A' + 10;
-
-        out.push_back( b << (4 * ((i ^ 1) & 7)));
+        if(key.size()>64)
+            throw myexception("Слишком большой ключ (>256 бит)");
+        else
+            if(key.size()<32)
+                key.resize(32);
+            else
+                if(key.size()%32)
+                    key.resize(key.size()+(32-key.size()%32));
+        return string_to_hex(move(key));
     }
-    return out;
+    else
+    {
+        if(key.size()>32)
+            throw myexception("Слишком большой ключ (>256 бит)");
+        else
+            if(key.size()<16)
+                key.resize(16);
+            else
+                if(key.size()%16)
+                    key.resize(key.size()+(16-key.size()%16));
+        return vector<uint8_t>(key.begin(),key.end());
+    }
 }
 
-
-string Controller::encrypt(string &&key, string &&text)
+inline vector<uint8_t>Controller::PTToUint8_t(string &&text, bool isPTHex)
 {
-    if(key.size()%32)
-        key.resize(key.size()+(32-key.size()%32));
-    vector<uint8_t> _key(key.begin(),key.end());
-    twofish->keySchedule(move(_key));
-
-    if(text.size()%32)
-        text.resize(text.size()+(32-text.size()%32));
-    vector<uint8_t> _text;
-    _text.reserve(text.size()/2);
-    int j=0;
-    for(int i=1; i<text.size();i+=2)
+    if(isPTHex)
     {
-        _text.push_back(strtoul((char*)&text[i-1],0,16)<<4);
-        _text[j]|=strtoul((char*)&text[i],0,16);
-        j++;
+        if(text.size()%32)
+            text.resize(text.size()+(32-text.size()%32));
+        return string_to_hex(move(text));
+    }
+    else
+    {
+        if(text.size()%16)
+            text.resize(text.size()+(16-text.size()%16));
+        return vector<uint8_t>(text.begin(),text.end());
     }
 
+}
+
+string Controller::encrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex)
+{
+    if (key.size()==0||text.size()==0)
+        throw myexception("Введите данные");
+    vector<uint8_t> _key=keyToUint8_t(move(key),isKeyHex);
+    twofish->keySchedule(move(_key));
+
+    vector<uint8_t> _text=PTToUint8_t(move(text),isPTHex);
     string out;
     auto it1=_text.begin();
     auto it2=_text.begin()+16;
@@ -95,23 +109,21 @@ string Controller::encrypt(string &&key, string &&text)
         vector<uint8_t> t(it1,it2);
         it1=it2;
         it2=it1+16;
-        t=twofish->encrypt(move(t));        
+        t=twofish->encrypt(move(t));
         out+=BytesToHexStr(move(t));
     }
+    twofish->keyReset();
     return out;
 }
 
-string Controller::decrypt(string &&key, string &&text)
+string Controller::decrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex)
 {
-    if(key.size()%32)
-        key.resize(key.size()+(32-key.size()%32));
-    vector<uint8_t> _key(key.begin(),key.end());
+    if (key.size()==0||text.size()==0)
+        throw myexception("Введите данные");
+    vector<uint8_t> _key=keyToUint8_t(move(key),isKeyHex);
     twofish->keySchedule(move(_key));
 
-    if(text.size()%32)
-        text.resize(text.size()+(32-text.size()%32));
-    vector<uint8_t> _text=string_to_hex(move(text));
-
+    vector<uint8_t> _text=PTToUint8_t(move(text),isPTHex);
     string out;
     auto it1=_text.begin();
     auto it2=_text.begin()+16;
@@ -123,5 +135,21 @@ string Controller::decrypt(string &&key, string &&text)
         t=twofish->decrypt(move(t));
         out+=BytesToHexStr(move(t));
     }
+    twofish->keyReset();
     return out;
+}
+
+void Controller::printResults(string &&filename, string &&out)
+{
+    this->fileManager->saveFile(move(filename),move(out));
+}
+
+string Controller::loadKey(string &&filename)
+{
+    return this->fileManager->loadFile(move(filename));
+}
+
+string Controller::loadInputText(string &&filename)
+{
+    return this->fileManager->loadFile(move(filename));
 }
