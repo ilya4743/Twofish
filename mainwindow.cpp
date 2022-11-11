@@ -8,8 +8,8 @@ MainWindow::MainWindow(Controller* controller, QWidget *parent)
 {
     ui->setupUi(this);
     QRegExp rx("([0-9]|[A-F]|[a-f]){6}");
-    ui->lineEdit_2->setInputMask(" HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH");
     ui->lineEdit_2->setText("00000000000000000000000000000000");
+    ui->lineEdit_2->setInputMask("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 }
 
 MainWindow::~MainWindow()

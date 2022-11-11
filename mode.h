@@ -56,7 +56,7 @@ class Encryptor
 
     vector<uint8_t> decrypt( vector<uint8_t>&& key, vector<uint8_t>&& text)
     {
-        return mode->encrypt(move(key), move(text), twofish);
+        return mode->decrypt(move(key), move(text), twofish);
     }
   private:
     IMode* mode;
