@@ -58,8 +58,8 @@ inline vector<uint8_t>Controller::keyToUint8_t(string &&key, bool isKeyHex)
             if(key.size()<32)
                 key.resize(32);
             else
-                if(key.size()%32)
-                    key.resize(key.size()+(32-key.size()%32));
+                if(key.size()%16)
+                    key.resize(key.size()+(16-key.size()%16));
         return string_to_hex(move(key));
     }
     else
@@ -70,8 +70,8 @@ inline vector<uint8_t>Controller::keyToUint8_t(string &&key, bool isKeyHex)
             if(key.size()<16)
                 key.resize(16);
             else
-                if(key.size()%16)
-                    key.resize(key.size()+(16-key.size()%16));
+                if(key.size()%8)
+                    key.resize(key.size()+(8-key.size()%8));
         return vector<uint8_t>(key.begin(),key.end());
     }
 }
@@ -139,17 +139,12 @@ string Controller::decrypt(string &&key, string &&text, bool isKeyHex, bool isPT
     return out;
 }
 
-void Controller::printResults(string &&filename, string &&out)
+void Controller::safeToFile(string &&filename, string &&out)
 {
     this->fileManager->saveFile(move(filename),move(out));
 }
 
-string Controller::loadKey(string &&filename)
-{
-    return this->fileManager->loadFile(move(filename));
-}
-
-string Controller::loadInputText(string &&filename)
+string Controller::loadFromFile(string &&filename)
 {
     return this->fileManager->loadFile(move(filename));
 }

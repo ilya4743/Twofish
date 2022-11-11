@@ -69,29 +69,6 @@ uint32_t Twofish::h(uint32_t x, const vector<vector<uint8_t>>& l)
         ((M30(b[0]) ^ M31(b[1]) ^ M32(b[2]) ^ M33(b[3])) << 24);
 }
 
-inline vector<uint32_t> Twofish::ParseHexDword(int bits, vector<uint8_t>&& srcTxt)
-{
-    int i;
-    uint32_t b = 0;
-    char c;
-    vector<uint32_t> out;
-    out.resize(bits / 32);
-
-    for (i = 0; i * 4 < bits; i++)
-    {
-        c = srcTxt[i];
-        if ((c >= '0') && (c <= '9'))
-            b = c - '0';
-        else if ((c >= 'a') && (c <= 'f'))
-            b = c - 'a' + 10;
-        else if ((c >= 'A') && (c <= 'F'))
-            b = c - 'A' + 10;
-
-        out[i / 8] |= b << (4 * ((i ^ 1) & 7));
-    }
-    return out;
-}
-
 uint32_t Twofish::RS_MDS_Encode(uint32_t k0, uint32_t k1)
 {
     int i, j;
@@ -122,8 +99,8 @@ void Twofish::keySchedule(vector<uint8_t>&& key)
     this->k = (key.size()*8)/64;
     vector<uint32_t> kv;
     kv.reserve(key.size()/4);
-    for(int i=0; i<key.size()/4;i++)
-        kv.push_back(key[i]<<24 | key[i+1] << 16 | key[i+2] << 8 | key[i+3] << 0);
+    for(int i=0; i<key.size();i+=4)
+        kv.push_back(key[i]<<0 | key[i+1] << 8 | key[i+2] << 16 | key[i+3] << 24);
 
     Me.reserve(k);
     Mo.reserve(k);

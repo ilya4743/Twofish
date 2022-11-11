@@ -79,7 +79,7 @@ void MainWindow::on_action_2_triggered()
             tr("Сохранить результат работы программы"), path,
             tr("result (*.txt);;All Files (*.txt)"));
         string out=ui->plainTextEdit_2->toPlainText().toStdString();
-        controller->printResults(std::move(fileName.toStdString()),std::move(out));
+        controller->safeToFile(std::move(fileName.toStdString()),std::move(out));
     }
     catch(myexception& e)
     {
@@ -95,12 +95,12 @@ void MainWindow::on_action_3_triggered()
     {
         QString fileName1 = QFileDialog::getOpenFileName(this,
             tr("Выберите файл с ключом"), "",tr("All Files (*.txt)"));
-        string key=controller->loadKey(std::move(fileName1.toStdString()));
+        string key=controller->loadFromFile(std::move(fileName1.toStdString()));
         ui->lineEdit->setText(QString::fromStdString(key));
 
         QString fileName2 = QFileDialog::getOpenFileName(this,
             tr("Выберите файл с входными данными"), "",tr("All Files (*.txt)"));
-        string text=controller->loadInputText(std::move(fileName1.toStdString()));
+        string text=controller->loadFromFile(std::move(fileName1.toStdString()));
         ui->plainTextEdit->setPlainText(QString::fromStdString(text));
     }
     catch(myexception& e)

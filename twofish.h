@@ -43,7 +43,6 @@ private:
 	uint8_t q1(uint8_t x);
 	uint8_t q0(uint8_t x);
 	uint32_t RS_MDS_Encode(uint32_t k0, uint32_t k1);
-	inline vector<uint32_t> ParseHexDword(int bits, vector<uint8_t>&& srcTxt);
 	uint32_t h(uint32_t x, const vector<vector<uint8_t>>& l);
 public:
 	void setKey();	

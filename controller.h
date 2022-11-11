@@ -16,12 +16,11 @@ private:
 
 public:
     Controller(Twofish * _twofish):twofish(_twofish){fileManager=new FileManager;}
+    ~Controller(){delete fileManager;}
     string encrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex);
     string decrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex);
-    ~Controller(){delete fileManager;}
-    void printResults(string &&filename, string &&out);
-    string loadKey(string &&filename);
-    string loadInputText(string &&filename);
+    void safeToFile(string &&filename, string &&out);
+    string loadFromFile(string &&filename);
 };
 
 #endif // CONTROLLER_H
