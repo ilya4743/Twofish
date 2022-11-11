@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
+#include "mode.h"
 #include "FileManager.h"
-#include "twofish.h"
 #include "myexception.h"
 
 class Controller
@@ -17,8 +17,8 @@ private:
 public:
     Controller(Twofish * _twofish):twofish(_twofish){fileManager=new FileManager;}
     ~Controller(){delete fileManager;}
-    string encrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex);
-    string decrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex);
+    string encrypt(string &&key, string &&text, string &&initvec, bool isKeyHex, bool isPTHex, int mode);
+    string decrypt(string &&key, string &&text, string &&initvec, bool isKeyHex, bool isPTHex, int mode);
     void safeToFile(string &&filename, string &&out);
     string loadFromFile(string &&filename);
 };

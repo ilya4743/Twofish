@@ -27,6 +27,8 @@ set(PROJECT_SOURCES
         controller.h
         controller.cpp
         myexception.h
+        mode.h
+        mode.cpp
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

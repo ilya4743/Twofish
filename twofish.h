@@ -2,8 +2,6 @@
 
 #include "def.h"
 #include <iostream>
-#include <boost/qvm/mat.hpp>
-#include <cmath>
 #include <vector>
 #include <algorithm>
 

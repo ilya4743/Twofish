@@ -7,6 +7,9 @@ MainWindow::MainWindow(Controller* controller, QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    QRegExp rx("([0-9]|[A-F]|[a-f]){6}");
+    ui->lineEdit_2->setInputMask(" HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH  HH");
+    ui->lineEdit_2->setText("00000000000000000000000000000000");
 }
 
 MainWindow::~MainWindow()
@@ -20,9 +23,11 @@ void MainWindow::on_pushButton_clicked()
     {
         string str1=ui->lineEdit->text().toStdString();
         string str2=ui->plainTextEdit->toPlainText().toStdString();
+        string str3=ui->lineEdit_2->text().toStdString();
         bool isKeyHex=ui->radioButton_3->isChecked();
         bool isPTHex=ui->radioButton_2->isChecked();
-        string out=controller->encrypt(std::move(str1),std::move(str2), isKeyHex, isPTHex);
+        int mode=ui->comboBox->currentIndex();
+        string out=controller->encrypt(std::move(str1),std::move(str2), std::move(str3), isKeyHex, isPTHex, mode);
         ui->plainTextEdit_2->setPlainText(QString::fromStdString(out));
     }
     catch (myexception& e)
@@ -39,9 +44,11 @@ void MainWindow::on_pushButton_2_clicked()
     {
         string str1=ui->lineEdit->text().toStdString();
         string str2=ui->plainTextEdit->toPlainText().toStdString();
+        string str3=ui->lineEdit_2->text().toStdString();
         bool isKeyHex=ui->radioButton_3->isChecked();
         bool isPTHex=ui->radioButton_2->isChecked();
-        string out=controller->decrypt(std::move(str1),std::move(str2), isKeyHex, isPTHex);
+        int mode=ui->comboBox->currentIndex();
+        string out=controller->decrypt(std::move(str1),std::move(str2), std::move(str3), isKeyHex, isPTHex, mode);
         ui->plainTextEdit_2->setPlainText(QString::fromStdString(out));
     }
     catch (myexception& e)
@@ -120,3 +127,11 @@ void MainWindow::on_action_5_triggered()
     "Являлся одним из пяти финалистов второго этапа конкурса AES. Алгоритм разработан на основе алгоритмов Blowfish, SAFER и SQUARE. ");
 }
 
+
+void MainWindow::on_comboBox_currentIndexChanged(int index)
+{
+    if (index!=0)
+        ui->lineEdit_2->setEnabled(true);
+    else
+        ui->lineEdit_2->setEnabled(false);
+}

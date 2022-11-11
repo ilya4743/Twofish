@@ -1,13 +1,12 @@
 #include "controller.h"
-#include <QString>
 
 static const char hex_table[16] = {
   '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'
 };
 
-string BytesToHexStr(vector<uint8_t> &&aInStr)
+string hex_to_string(vector<uint8_t> &&aInStr)
 {
-    std::string hex_str;
+    string hex_str;
     hex_str.reserve(32);
     for (int i = 0; i < aInStr.size(); ++i)
     {
@@ -93,50 +92,56 @@ inline vector<uint8_t>Controller::PTToUint8_t(string &&text, bool isPTHex)
 
 }
 
-string Controller::encrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex)
+string Controller::encrypt(string &&key, string &&text, string &&initvec, bool isKeyHex, bool isPTHex, int mode)
 {
     if (key.size()==0||text.size()==0)
         throw myexception("Введите данные");
     vector<uint8_t> _key=keyToUint8_t(move(key),isKeyHex);
-    twofish->keySchedule(move(_key));
-
     vector<uint8_t> _text=PTToUint8_t(move(text),isPTHex);
-    string out;
-    auto it1=_text.begin();
-    auto it2=_text.begin()+16;
-    for(int i=0; i<_text.size()/16;i++)
+    vector<uint8_t> _initvec=string_to_hex(move(initvec));
+
+    Encryptor* encryptor;
+    switch(mode)
     {
-        vector<uint8_t> t(it1,it2);
-        it1=it2;
-        it2=it1+16;
-        t=twofish->encrypt(move(t));
-        out+=BytesToHexStr(move(t));
+        case ECB:
+        encryptor=new Encryptor(new ECB_MODE);
+            break;
+        case CBC:
+        encryptor=new Encryptor(new CBC_MODE(move(_initvec)));
+            break;
+        case CFB:
+        encryptor=new Encryptor(new CFB_MODE(move(_initvec)));
+            break;
     }
-    twofish->keyReset();
-    return out;
+    vector<uint8_t> out=encryptor->encrypt(move(_key), move(_text));
+    delete encryptor;
+    return hex_to_string(move(out));
 }
 
-string Controller::decrypt(string &&key, string &&text, bool isKeyHex, bool isPTHex)
+string Controller::decrypt(string &&key, string &&text, string &&initvec, bool isKeyHex, bool isPTHex, int mode)
 {
     if (key.size()==0||text.size()==0)
         throw myexception("Введите данные");
     vector<uint8_t> _key=keyToUint8_t(move(key),isKeyHex);
-    twofish->keySchedule(move(_key));
-
     vector<uint8_t> _text=PTToUint8_t(move(text),isPTHex);
-    string out;
-    auto it1=_text.begin();
-    auto it2=_text.begin()+16;
-    for(int i=0; i<_text.size()/16;i++)
+    vector<uint8_t> _initvec=string_to_hex(move(initvec));
+
+    Encryptor* encryptor;
+    switch(mode)
     {
-        vector<uint8_t> t(it1,it2);
-        it1=it2;
-        it2=it1+16;
-        t=twofish->decrypt(move(t));
-        out+=BytesToHexStr(move(t));
+        case ECB:
+        encryptor=new Encryptor(new ECB_MODE);
+            break;
+        case CBC:
+        encryptor=new Encryptor(new CBC_MODE(move(_initvec)));
+            break;
+        case CFB:
+        encryptor=new Encryptor(new CFB_MODE(move(_initvec)));
+            break;
     }
-    twofish->keyReset();
-    return out;
+    vector<uint8_t> out=encryptor->decrypt(move(_key), move(_text));
+    delete encryptor;
+    return hex_to_string(move(out));
 }
 
 void Controller::safeToFile(string &&filename, string &&out)

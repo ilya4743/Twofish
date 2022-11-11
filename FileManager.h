@@ -1,7 +1,6 @@
 #pragma once
 #include <fstream>
 #include <string>
-#include <vector>
 #include "myexception.h"
 
 using namespace std;
@@ -14,4 +13,3 @@ public:
     string loadFile(string &&filename);
     void saveFile(string&& filename, string&& text);
 };
-
